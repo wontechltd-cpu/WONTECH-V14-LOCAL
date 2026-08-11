@@ -1,3 +1,46 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WONTECH 업무메모 V14</title><link rel="stylesheet" href="styles.css"><script src="html2canvas.min.js"></script></head><body>
-<header class="toolbar"><img id="toolbarLogo" class="logo-top" alt="WONTECH"><button id="today">오늘</button><button id="add">＋ 업무</button><button id="checklist">체크리스트</button><button id="quoteManager">견적관리</button><button id="orderManager">발주관리</button><button id="translator">번역</button><button id="changeLogo">마크 교체</button><label><input id="top" type="checkbox"> 항상 위</label><span class="sep"></span><button id="jpg">JPG</button><button id="pdf">PDF</button><button id="print">인쇄</button></header>
-<main id="days"></main><button id="older" class="older">이전 날짜 30일 더 보기</button><div id="note" class="output-note"></div><script src="renderer.js"></script></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WONTECH 업무관리 V14</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="html2canvas.min.js"></script>
+</head>
+<body class="main-app">
+  <header class="toolbar main-toolbar">
+    <div class="app-identity">
+      <img id="toolbarLogo" class="logo-top" alt="WONTECH">
+      <div class="app-title-wrap">
+        <strong>업무관리</strong>
+        <span>WONTECH WORK DESK</span>
+      </div>
+    </div>
+    <nav class="primary-nav" aria-label="주요 기능">
+      <button id="today" class="nav-button" title="오늘 업무로 이동">오늘</button>
+      <button id="add" class="nav-button primary" title="오늘 업무 추가">＋ 업무</button>
+      <button id="checklist" class="nav-button" title="체크리스트 열기">체크</button>
+      <button id="quoteManager" class="nav-button" title="견적 작성 및 이력관리">견적</button>
+      <button id="orderManager" class="nav-button" title="발주 작성 및 이력관리">발주</button>
+      <button id="attachments" class="nav-button accent" title="제출 견적 및 첨부파일 관리">첨부한파일</button>
+      <button id="translator" class="nav-button" title="번역 창 열기">번역</button>
+      <button id="changeLogo" class="nav-button" title="WONTECH 마크 교체">마크</button>
+    </nav>
+    <div class="toolbar-tools">
+      <label class="top-toggle" title="창을 다른 창보다 항상 위에 표시"><input id="top" type="checkbox"><span>항상 위</span></label>
+      <span class="sep" aria-hidden="true"></span>
+      <button id="jpg" class="tool-button">JPG</button>
+      <button id="pdf" class="tool-button">PDF</button>
+      <button id="print" class="tool-button">인쇄</button>
+    </div>
+  </header>
+  <div class="workspace-bar">
+    <div><strong>일일 업무메모</strong><span>미처리 업무는 다음 업무일로 자동 이월됩니다.</span></div>
+    <span id="currentWorkDate" class="work-date-chip"></span>
+  </div>
+  <main id="days" class="days"></main>
+  <button id="older" class="older">이전 날짜 30일 더 보기</button>
+  <div id="note" class="output-note" role="status"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

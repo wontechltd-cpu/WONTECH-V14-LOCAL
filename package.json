@@ -1,38 +1,45 @@
 {
   "name": "wontech-v14-local",
-  "version": "14.0.0",
-  "description": "WONTECH 업무메모 + 견적 + 발주 통합 로컬 프로그램",
+  "version": "14.1.0",
+  "description": "WONTECH 업무메모 + 견적 + 발주 + 첨부파일 통합 로컬 프로그램",
   "main": "main.js",
   "author": "WONTECH",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win portable",
-    "pack": "electron-builder --dir"
+    "dist": "npm run dist:x64",
+    "dist:x64": "electron-builder --win nsis --x64",
+    "dist:ia32": "electron-builder --win nsis --ia32"
   },
   "devDependencies": {
-    "electron": "^37.2.0",
-    "electron-builder": "^26.0.12"
+    "electron": "43.3.0",
+    "electron-builder": "26.15.3"
   },
   "build": {
-    "appId": "com.wontech.v14local",
+    "appId": "net.wontech.workmanager.v14",
     "productName": "WONTECH 업무관리 V14",
+    "artifactName": "WONTECH_업무관리_V14_${version}_${arch}.${ext}",
     "asar": true,
-    "files": [
-      "**/*",
-      "!dist/**",
-      "!release/**",
-      "!.github/**"
-    ],
     "directories": {
       "output": "release"
     },
+    "files": [
+      "**/*",
+      "!.github/**",
+      "!release/**",
+      "!node_modules/.cache/**"
+    ],
     "win": {
-      "target": [
-        "portable"
-      ],
       "icon": "assets/WontechQuote.ico",
-      "artifactName": "WONTECH_업무관리_V14_${version}.${ext}"
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "WONTECH 업무관리 V14",
+      "uninstallDisplayName": "WONTECH 업무관리 V14"
     }
   }
 }

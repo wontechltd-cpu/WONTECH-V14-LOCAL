@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WONTECH 견적관리</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="html2canvas.min.js"></script>
+</head>
+<body class="tracking-app">
+  <header class="toolbar tracking-header">
+    <img id="trackingLogo" class="logo-top" alt="WONTECH">
+    <div class="tracking-heading">
+      <strong>견적관리</strong>
+      <span>견적 · 입찰 · 거래처 담당자 · 첨부파일을 한 화면에서 관리합니다.</span>
+    </div>
+    <div class="tracking-header-actions">
+      <button id="exportExcel">EXCEL</button>
+      <button id="outputSettings">출력설정</button>
+      <button id="exportJpg">JPG</button>
+      <button id="exportPdf">PDF</button>
+      <button id="printTracking">인쇄</button>
+      <button id="closeTracking" class="close-window" title="창 닫기">×</button>
+    </div>
+  </header>
+
+  <nav class="tracking-tabs" aria-label="견적 분류">
+    <button data-tab="progress" class="active">진행 견적</button>
+    <button data-tab="bid">입찰 유 리스트</button>
+    <button data-tab="cxl">CXL 리스트</button>
+    <button data-tab="contacts">담당자 편집</button>
+    <span id="trackingCount" class="tracking-count"></span>
+  </nav>
+
+  <main id="trackingMain" class="tracking-main">
+    <section id="trackingView" class="tracking-table-wrap">
+      <table id="trackingTable" class="tracking-table">
+        <colgroup>
+          <col style="width:34px"><col style="width:325px"><col style="width:55px"><col style="width:55px">
+          <col style="width:115px"><col style="width:125px"><col style="width:115px"><col style="width:125px">
+          <col style="width:135px"><col style="width:105px"><col style="width:140px"><col style="width:128px">
+          <col style="width:128px"><col style="width:70px"><col style="width:165px"><col style="width:175px">
+        </colgroup>
+        <thead><tr>
+          <th>NO</th><th>견적제목</th><th>단위</th><th>수량</th><th>견적단가</th><th>견적금액</th>
+          <th>입찰단가</th><th>입찰금액</th><th>요청회사</th><th>부서</th><th>담당자</th>
+          <th>제출일자</th><th>입찰일자</th><th>입찰유무</th><th>비고</th><th>첨부</th>
+        </tr></thead>
+        <tbody id="trackingBody"></tbody>
+      </table>
+    </section>
+
+    <section id="contactView" class="contact-editor" hidden>
+      <div class="contact-card">
+        <div class="contact-title">거래처 담당자 편집</div>
+        <form id="contactForm" class="contact-form">
+          <input id="contactCompany" placeholder="요청회사" required>
+          <input id="contactDepartment" placeholder="부서" required>
+          <input id="contactName" placeholder="담당자" required>
+          <button type="submit">＋ 담당자 추가</button>
+        </form>
+        <table class="contact-table">
+          <thead><tr><th>요청회사</th><th>부서</th><th>담당자</th><th>삭제</th></tr></thead>
+          <tbody id="contactBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer id="trackingFooter" class="tracking-footer"><button id="addQuote">＋ 견적 추가</button></footer>
+  </main>
+  <div class="tracking-help">입찰유무에서 <b>유</b>를 선택하면 진행 견적에서 빠지고 ‘입찰 유 리스트’로 이동합니다. <b>CXL</b>을 선택하면 ‘CXL 리스트’로 이동하며, 다시 <b>무</b>로 변경하면 진행 견적으로 복귀합니다. 견적금액과 입찰금액은 각각 단가 × 수량으로 자동 계산됩니다. 첨부 칸에서 파일을 선택하거나 끌어다 놓아 보관할 수 있습니다.</div>
+
+  <dialog id="outputDialog">
+    <div class="dialog-title">출력 설정</div>
+    <div class="dialog-body">
+      <label class="dialog-row"><span>용지 방향</span><select id="outputOrientation"><option value="landscape">A4 가로</option><option value="portrait">A4 세로</option></select></label>
+      <label class="dialog-row"><span>행 간격</span><select id="outputDensity"><option value="normal">보통</option><option value="compact">좁게</option></select></label>
+    </div>
+    <div class="dialog-actions"><button id="cancelOutput">취소</button><button id="saveOutput" class="primary">저장</button></div>
+  </dialog>
+  <div id="trackingNote" class="output-note" role="status"></div>
+  <script src="quote-tracking.js"></script>
+</body>
+</html>

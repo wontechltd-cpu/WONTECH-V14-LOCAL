@@ -1,12 +1,16 @@
 const {app,BrowserWindow,ipcMain,dialog,shell}=require('electron');
 const path=require('path');
 const fs=require('fs');
+const crypto=require('crypto');
 
 const windows=new Map();
 const iconPath=path.join(__dirname,'assets','WontechQuote.ico');
 let storePath;
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],documents:[],logoData:null};}
+// V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
+app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
+
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'}},logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -23,7 +27,7 @@ function createNamed(name,file,extra={}){
   const win=new BrowserWindow(windowOpts(extra));
   windows.set(name,win);win.on('closed',()=>windows.delete(name));win.loadFile(file);return win;
 }
-function createMain(){return createNamed('main','index.html',{width:760,height:860,alwaysOnTop:false});}
+function createMain(){return createNamed('main','index.html',{width:1180,height:900,minWidth:760,minHeight:650,alwaysOnTop:false});}
 function openManager(type){
   const name=type==='order'?'order-manager':'quote-manager';
   const existing=windows.get(name);if(existing&&!existing.isDestroyed()){existing.focus();return;}
@@ -141,21 +145,54 @@ ipcMain.handle('window:open',(_,kind,arg)=>{
   else if(kind==='translator')createNamed('translator','translator.html',{width:900,height:650});
   else if(kind==='quote-manager')openManager('quote');
   else if(kind==='order-manager')openManager('order');
+  else if(kind==='quote-tracking')createNamed('quote-tracking','quote-tracking.html',{width:1500,height:850,minWidth:1050,minHeight:650});
   else if(kind==='editor')openEditor(arg?.type||'quote',arg?.docId||'');
   return true;
 });
 ipcMain.handle('window:top',(event,value)=>{const w=BrowserWindow.fromWebContents(event.sender);w.setAlwaysOnTop(!!value);return w.isAlwaysOnTop();});
+ipcMain.handle('window:close',event=>{const w=BrowserWindow.fromWebContents(event.sender);if(w&&!w.isDestroyed())w.close();return true;});
 ipcMain.handle('external:open',(_,url)=>shell.openExternal(url));
+
+function archiveAttachments(recordId,sourcePaths=[]){
+  const safeId=String(recordId||'unassigned').replace(/[^a-zA-Z0-9_-]/g,'_');
+  const targetDir=path.join(app.getPath('userData'),'wontech-v14-attachments',safeId);
+  fs.mkdirSync(targetDir,{recursive:true});
+  const saved=[];
+  sourcePaths.forEach((source,index)=>{
+    try{
+      if(!source||!fs.existsSync(source)||!fs.statSync(source).isFile())return;
+      const original=path.basename(source);
+      const token=`${Date.now()}-${index}-${crypto.randomBytes(3).toString('hex')}`;
+      const target=path.join(targetDir,`${token}-${original}`);
+      fs.copyFileSync(source,target);
+      const stat=fs.statSync(target);
+      saved.push({id:crypto.randomUUID(),name:original,path:target,size:stat.size,addedAt:new Date().toISOString()});
+    }catch(err){console.error('attachment archive',err);}
+  });
+  return saved;
+}
+
+ipcMain.handle('attachment:pick',async(event,recordId)=>{
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const r=await dialog.showOpenDialog(owner,{title:'견적 첨부파일 선택',properties:['openFile','multiSelections'],filters:[{name:'견적 관련 파일',extensions:['xlsx','xls','csv','pdf','jpg','jpeg','png','doc','docx']},{name:'모든 파일',extensions:['*']}]});
+  if(r.canceled)return [];
+  return archiveAttachments(recordId,r.filePaths);
+});
+ipcMain.handle('attachment:archive',(_,recordId,paths)=>archiveAttachments(recordId,Array.isArray(paths)?paths:[]));
+ipcMain.handle('attachment:open',async(_,filePath)=>{
+  if(!filePath||!fs.existsSync(filePath))return '첨부파일을 찾을 수 없습니다.';
+  return shell.openPath(filePath);
+});
 
 ipcMain.handle('docs:list',(_,type)=>getStore('documents').filter(x=>!type||x.type===type).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')));
 ipcMain.handle('docs:get',(_,id)=>getStore('documents').find(x=>x.id===id)||null);
 ipcMain.handle('docs:save',(_,doc)=>{const docs=getStore('documents');const i=docs.findIndex(x=>x.id===doc.id);if(i>=0)docs[i]=doc;else docs.push(doc);setStore('documents',docs);return doc;});
 ipcMain.handle('docs:delete',(_,id)=>{setStore('documents',getStore('documents').filter(x=>x.id!==id));return true;});
 
-ipcMain.handle('output:print',async(event)=>new Promise(resolve=>event.sender.print({silent:false,printBackground:true},(success,reason)=>resolve({success,reason}))));
-ipcMain.handle('output:pdf',async(event,defaultName='WONTECH_업무메모')=>{
+ipcMain.handle('output:print',async(event,options={})=>new Promise(resolve=>event.sender.print({silent:false,printBackground:true,landscape:!!options.landscape},(success,reason)=>resolve({success,reason}))));
+ipcMain.handle('output:pdf',async(event,defaultName='WONTECH_업무메모',options={})=>{
   const owner=BrowserWindow.fromWebContents(event.sender);const r=await dialog.showSaveDialog(owner,{defaultPath:defaultName+'.pdf',filters:[{name:'PDF',extensions:['pdf']}]});if(r.canceled)return false;
-  const buf=await event.sender.printToPDF({printBackground:true,pageSize:'A4',margins:{marginType:'default'}});fs.writeFileSync(r.filePath,buf);return true;
+  const buf=await event.sender.printToPDF({printBackground:true,landscape:!!options.landscape,pageSize:'A4',margins:{marginType:'default'}});fs.writeFileSync(r.filePath,buf);return true;
 });
 ipcMain.handle('output:bytes',async(event,bytes,defaultName='WONTECH_문서')=>{
   const owner=BrowserWindow.fromWebContents(event.sender);const ext=path.extname(defaultName).replace('.','')||'dat';
