@@ -1,0 +1,38 @@
+{
+  "name": "wontech-v14-local",
+  "version": "14.0.0",
+  "description": "WONTECH 업무메모 + 견적 + 발주 통합 로컬 프로그램",
+  "main": "main.js",
+  "author": "WONTECH",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable",
+    "pack": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.wontech.v14local",
+    "productName": "WONTECH 업무관리 V14",
+    "asar": true,
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!release/**",
+      "!.github/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "assets/WontechQuote.ico",
+      "artifactName": "WONTECH_업무관리_V14_${version}.${ext}"
+    }
+  }
+}
