@@ -1,4 +1,4 @@
-# WONTECH 업무관리 V14.1.0 — GitHub Windows 빌드
+# WONTECH 업무관리 V14.1.2 — GitHub Windows 빌드
 
 이 프로젝트를 GitHub에 올리면 GitHub Actions가 Windows에서 설치파일을 직접 만듭니다.
 
@@ -14,15 +14,15 @@
 
 ## 어떤 파일을 받아야 하나요?
 
-- 일반적인 Windows 10·11 PC: `WONTECH-V14-Windows-64bit`
-- 64비트 파일이 “현재 PC에서는 이 앱을 실행할 수 없습니다”라고 나오면: `WONTECH-V14-Windows-32bit`
+- Windows 10·11 64비트 PC: `WONTECH-V14-Windows`
 
 Artifact를 받으면 ZIP으로 다운로드됩니다. 압축을 풀고 안에 있는 설치 EXE를 실행하세요.
 
 ## 프로그램 기능
 
-- 메인 메뉴: 오늘 / +업무 / 체크 / 견적 / 발주 / 첨부한파일 / 번역 / 마크
+- 메인 메뉴: 오늘 / +업무 / 체크 / 견적 / 발주 / 견적관리 / Google번역 / GPT번역 / 마크
 - 오전 3시 기준 날짜 전환 및 미처리 업무 자동 이월
 - 제출 견적 / 입찰 유 / CXL / 담당자 / 첨부파일 관리
 - 업무표 머리글 가로·세로 중앙 정렬
 - 기존 V14 데이터 폴더를 그대로 사용
+- Google번역/GPT번역 사이트 바로 연결(API 키 불필요)

@@ -10,7 +10,7 @@ let storePath;
 // V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
 app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'}},logoData:null};}
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -27,12 +27,12 @@ function createNamed(name,file,extra={}){
   const win=new BrowserWindow(windowOpts(extra));
   windows.set(name,win);win.on('closed',()=>windows.delete(name));win.loadFile(file);return win;
 }
-function createMain(){return createNamed('main','index.html',{width:1180,height:900,minWidth:760,minHeight:650,alwaysOnTop:false});}
+function createMain(){const win=createNamed('main','index.html',{width:1180,height:900,minWidth:760,minHeight:650,alwaysOnTop:false});win.maximize();return win;}
 function openManager(type){
   const name=type==='order'?'order-manager':'quote-manager';
   const existing=windows.get(name);if(existing&&!existing.isDestroyed()){existing.focus();return;}
   const win=new BrowserWindow(windowOpts({width:1050,height:720}));
-  windows.set(name,win);win.on('closed',()=>windows.delete(name));win.loadFile('manager.html',{query:{type}});
+  windows.set(name,win);win.on('closed',()=>windows.delete(name));win.loadFile('manager.html',{query:{type}});win.maximize();
 }
 
 const editorIntegration=`
@@ -70,28 +70,52 @@ const editorIntegration=`
     }else if(typeof setDocType==='function')setDocType(requested);
   }catch(e){console.error('V14 editor init',e);if(typeof setDocType==='function')setDocType(requested);}
 
-  const originalSaveBrowser=window.saveBrowser;
-  window.saveBrowser=async function(){
+  window.saveHistory=async function(){
     try{
-      if(typeof originalSaveBrowser==='function')originalSaveBrowser();
       await saveToManager();
-      if(typeof toast==='function')toast((document.getElementById('docType')?.value==='order'?'발주':'견적')+' 이력에도 저장했습니다.');
-    }catch(e){alert('임시 저장 중 문제가 발생했습니다.\\n'+e.message);}
-  };
-
-  const originalSaveJSON=window.saveJSON;
-  window.saveJSON=async function(){
-    try{await saveToManager();}catch(e){console.error(e);}
-    if(typeof originalSaveJSON==='function')return originalSaveJSON();
+      if(typeof toast==='function')toast((document.getElementById('docType')?.value==='order'?'발주':'견적')+' 이력관리에 저장했습니다.');
+      return true;
+    }catch(e){alert('이력관리 저장 중 문제가 발생했습니다.\\n'+e.message);return false;}
   };
 
   const originalNewQuote=window.newQuote;
   window.newQuote=function(){
     const mode=document.getElementById('docType')?.value||requested;
-    if(typeof originalNewQuote==='function')originalNewQuote();
+    const created=typeof originalNewQuote==='function'?originalNewQuote():true;
+    if(created===false)return false;
     currentDocId='';
     if(typeof setDocType==='function')setDocType(mode);
+    document.querySelectorAll('.sheet input,.sheet textarea,.sheet select,.sheet button').forEach(control=>{control.disabled=false;control.readOnly=false;});
+    requestAnimationFrame(()=>document.getElementById('client')?.focus());
+    return true;
   };
+
+  const actions=document.querySelector('.actions');
+  if(actions){
+    const loadLabel=actions.querySelector('.file-button');
+    const historyButton=document.createElement('button');
+    historyButton.id='saveHistoryButton';historyButton.type='button';historyButton.textContent='이력 저장';
+    historyButton.onclick=()=>window.saveHistory();
+    actions.insertBefore(historyButton,loadLabel||null);
+
+    const folderButton=document.createElement('button');
+    folderButton.id='outputFolderButton';folderButton.type='button';folderButton.textContent='저장 위치';
+    folderButton.onclick=async()=>{
+      const selected=await window.wontech.chooseOutputDirectory();
+      if(selected&&typeof toast==='function')toast('파일 저장 위치를 '+selected+' 폴더로 설정했습니다.');
+    };
+    actions.insertBefore(folderButton,loadLabel||null);
+    actions.querySelectorAll('button').forEach(button=>{
+      button.classList.remove('primary');
+      button.addEventListener('click',()=>{button.classList.add('action-active');setTimeout(()=>button.classList.remove('action-active'),550);});
+    });
+  }
+
+  const editorStyle=document.createElement('style');
+  editorStyle.textContent='.actions button.action-active{background:#173d67!important;border-color:#173d67!important;color:#fff!important;box-shadow:0 3px 9px rgba(23,61,103,.28)}body:not(.export-mode){zoom:var(--editor-scale,1)}';
+  document.head.appendChild(editorStyle);
+  const fitEditor=()=>{const scale=Math.min(1,window.innerWidth/1450,window.innerHeight/940);document.documentElement.style.setProperty('--editor-scale',String(Math.max(.4,scale)));};
+  window.addEventListener('resize',fitEditor);fitEditor();
 
   window.download=async function(content,name,type){
     try{
@@ -121,9 +145,10 @@ const editorIntegration=`
 
 function openEditor(type='quote',docId=''){
   const name='editor-'+(docId||Date.now());
-  const win=new BrowserWindow(windowOpts({width:1450,height:940,minWidth:900,minHeight:650}));
+  const win=new BrowserWindow(windowOpts({width:1450,height:940,minWidth:620,minHeight:520}));
   windows.set(name,win);win.on('closed',()=>windows.delete(name));
   win.loadFile('WontechQuote.html',{query:{type,docId}});
+  win.maximize();
   win.webContents.once('did-finish-load',()=>{
     win.webContents.executeJavaScript(editorIntegration).catch(err=>console.error('editor integration',err));
   });
@@ -142,10 +167,9 @@ ipcMain.handle('logo:pick',async(event)=>{
 });
 ipcMain.handle('window:open',(_,kind,arg)=>{
   if(kind==='checklist')createNamed('checklist','checklist.html',{width:1050,height:760});
-  else if(kind==='translator')createNamed('translator','translator.html',{width:900,height:650});
   else if(kind==='quote-manager')openManager('quote');
   else if(kind==='order-manager')openManager('order');
-  else if(kind==='quote-tracking')createNamed('quote-tracking','quote-tracking.html',{width:1500,height:850,minWidth:1050,minHeight:650});
+  else if(kind==='quote-tracking'){const win=createNamed('quote-tracking','quote-tracking.html',{width:1500,height:850,minWidth:540,minHeight:480});win.maximize();}
   else if(kind==='editor')openEditor(arg?.type||'quote',arg?.docId||'');
   return true;
 });
@@ -189,17 +213,43 @@ ipcMain.handle('docs:get',(_,id)=>getStore('documents').find(x=>x.id===id)||null
 ipcMain.handle('docs:save',(_,doc)=>{const docs=getStore('documents');const i=docs.findIndex(x=>x.id===doc.id);if(i>=0)docs[i]=doc;else docs.push(doc);setStore('documents',docs);return doc;});
 ipcMain.handle('docs:delete',(_,id)=>{setStore('documents',getStore('documents').filter(x=>x.id!==id));return true;});
 
+ipcMain.handle('output:directory:get',()=>getStore('outputDirectory')||'');
+ipcMain.handle('output:directory:choose',async event=>{
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const current=getStore('outputDirectory');
+  const r=await dialog.showOpenDialog(owner,{title:'WONTECH 파일 저장 위치 선택',defaultPath:current||app.getPath('documents'),properties:['openDirectory','createDirectory']});
+  if(r.canceled||!r.filePaths[0])return '';
+  setStore('outputDirectory',r.filePaths[0]);return r.filePaths[0];
+});
+
+function uniqueOutputPath(directory,fileName){
+  fs.mkdirSync(directory,{recursive:true});
+  const ext=path.extname(fileName),base=path.basename(fileName,ext);
+  let target=path.join(directory,fileName),index=1;
+  while(fs.existsSync(target))target=path.join(directory,`${base} (${index++})${ext}`);
+  return target;
+}
+
+async function chooseOutputPath(event,fileName,filters){
+  const directory=getStore('outputDirectory');
+  if(directory&&fs.existsSync(directory))return uniqueOutputPath(directory,fileName);
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const r=await dialog.showSaveDialog(owner,{defaultPath:fileName,filters});
+  return r.canceled?'':r.filePath;
+}
+
 ipcMain.handle('output:print',async(event,options={})=>new Promise(resolve=>event.sender.print({silent:false,printBackground:true,landscape:!!options.landscape},(success,reason)=>resolve({success,reason}))));
 ipcMain.handle('output:pdf',async(event,defaultName='WONTECH_업무메모',options={})=>{
-  const owner=BrowserWindow.fromWebContents(event.sender);const r=await dialog.showSaveDialog(owner,{defaultPath:defaultName+'.pdf',filters:[{name:'PDF',extensions:['pdf']}]});if(r.canceled)return false;
-  const buf=await event.sender.printToPDF({printBackground:true,landscape:!!options.landscape,pageSize:'A4',margins:{marginType:'default'}});fs.writeFileSync(r.filePath,buf);return true;
+  const filePath=await chooseOutputPath(event,defaultName+'.pdf',[{name:'PDF',extensions:['pdf']}]);if(!filePath)return false;
+  const buf=await event.sender.printToPDF({printBackground:true,landscape:!!options.landscape,pageSize:'A4',margins:{marginType:'default'}});fs.writeFileSync(filePath,buf);return true;
 });
 ipcMain.handle('output:bytes',async(event,bytes,defaultName='WONTECH_문서')=>{
-  const owner=BrowserWindow.fromWebContents(event.sender);const ext=path.extname(defaultName).replace('.','')||'dat';
-  const r=await dialog.showSaveDialog(owner,{defaultPath:defaultName,filters:[{name:'파일',extensions:[ext]}]});if(r.canceled)return false;
-  fs.writeFileSync(r.filePath,Buffer.from(bytes));return true;
+  const ext=path.extname(defaultName).replace('.','')||'dat';
+  const filePath=await chooseOutputPath(event,defaultName,[{name:'파일',extensions:[ext]}]);if(!filePath)return false;
+  fs.writeFileSync(filePath,Buffer.from(bytes));return true;
 });
 ipcMain.handle('output:image',async(event,dataUrl,defaultName='WONTECH_업무메모')=>{
-  const owner=BrowserWindow.fromWebContents(event.sender);const r=await dialog.showSaveDialog(owner,{defaultPath:defaultName+'.jpg',filters:[{name:'JPG',extensions:['jpg']}]});if(r.canceled)return false;
-  const m=String(dataUrl).match(/^data:image\/(?:jpeg|jpg|png);base64,(.+)$/);if(!m)throw new Error('이미지 데이터 형식 오류');fs.writeFileSync(r.filePath,Buffer.from(m[1],'base64'));return true;
+  const name=path.extname(defaultName)?defaultName:defaultName+'.jpg';
+  const filePath=await chooseOutputPath(event,name,[{name:'JPG',extensions:['jpg']}]);if(!filePath)return false;
+  const m=String(dataUrl).match(/^data:image\/(?:jpeg|jpg|png);base64,(.+)$/);if(!m)throw new Error('이미지 데이터 형식 오류');fs.writeFileSync(filePath,Buffer.from(m[1],'base64'));return true;
 });

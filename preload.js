@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('wontech',{
   print:options=>ipcRenderer.invoke('output:print',options),
   pdf:(name,options)=>ipcRenderer.invoke('output:pdf',name,options),
   saveImage:(dataUrl,name)=>ipcRenderer.invoke('output:image',dataUrl,name),
-  saveBytes:(bytes,name)=>ipcRenderer.invoke('output:bytes',bytes,name)
+  saveBytes:(bytes,name)=>ipcRenderer.invoke('output:bytes',bytes,name),
+  getOutputDirectory:()=>ipcRenderer.invoke('output:directory:get'),
+  chooseOutputDirectory:()=>ipcRenderer.invoke('output:directory:choose')
 });

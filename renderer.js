@@ -21,7 +21,9 @@ function fileBase(){return 'WONTECH_업무메모_'+(activeDate||workDate())}
 function showNote(t){const n=$('#note');n.textContent=t;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),1800)}
 async function init(){memo=await wontech.get('memoData')||memo;memo.tasksByDate=memo.tasksByDate||{};checklist=await wontech.get('checklist')||[];logoData=await wontech.getLogo();rollover();await saveAll();render();go(workDate());}
 $('#today').onclick=()=>go(workDate());$('#add').onclick=()=>addTask(workDate());$('#older').onclick=()=>{const old=visible;visible+=30;render();go(shiftDate(workDate(),-old))};
-$('#checklist').onclick=()=>wontech.open('checklist');$('#quoteManager').onclick=()=>wontech.open('quote-manager');$('#orderManager').onclick=()=>wontech.open('order-manager');$('#attachments').onclick=()=>wontech.open('quote-tracking');$('#translator').onclick=()=>wontech.open('translator');
+$('#checklist').onclick=()=>wontech.open('checklist');$('#quoteManager').onclick=()=>wontech.open('quote-manager');$('#orderManager').onclick=()=>wontech.open('order-manager');$('#attachments').onclick=()=>wontech.open('quote-tracking');
+$('#googleTranslate').onclick=()=>wontech.openExternal('https://translate.google.com/?sl=en&tl=ko&op=translate');
+$('#gptTranslate').onclick=()=>wontech.openExternal('https://chatgpt.com/');
 $('#changeLogo').onclick=async()=>{const d=await wontech.pickLogo();if(d){logoData=d;applyLogo();showNote('마크를 교체했습니다. 견적/발주 창에도 적용됩니다.')}};$('#top').onchange=e=>wontech.top(e.target.checked);
 $('#print').onclick=()=>withOutput(async()=>{const r=await wontech.print();if(!r?.success&&r?.reason)alert('인쇄 오류: '+r.reason)});
 $('#pdf').onclick=()=>withOutput(()=>wontech.pdf(fileBase()));

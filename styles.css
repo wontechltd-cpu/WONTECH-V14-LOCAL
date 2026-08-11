@@ -88,9 +88,6 @@ td.right,th.right{text-align:right}
 input[type=text],textarea,select{font:inherit}
 .small-input{width:100%;border:1px solid #d5dee6;border-radius:6px;padding:7px}
 .delbtn{border:0;background:#c54444;color:#fff;border-radius:50%;width:25px;height:25px}
-.translator{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px}
-.translator textarea{width:100%;min-height:330px;border:1px solid #ccd7e0;border-radius:8px;padding:12px;resize:vertical}
-.translator .box{background:#fff;border:1px solid #d6dfe6;border-radius:10px;padding:13px}
 .hint{color:#6b7785;font-size:11px;line-height:1.5}
 .output-note{position:fixed;bottom:10px;right:10px;z-index:50;background:var(--navy);color:#fff;padding:8px 12px;border-radius:7px;display:none;box-shadow:var(--shadow)}
 .output-note.show{display:block}
@@ -112,6 +109,9 @@ input[type=text],textarea,select{font:inherit}
 .tracking-table{width:max-content;min-width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:12px}
 .tracking-table th,.tracking-table td{padding:4px;border-right:1px solid #d9e0e5;border-bottom:1px solid #d9e0e5;vertical-align:middle}
 .tracking-table th{position:sticky;top:0;z-index:3;height:50px;background:#f6f3ea;border-bottom:2px solid #30404d;text-align:center;font-weight:800;color:#1d2b36;white-space:nowrap}
+.tracking-table th{overflow:visible}
+.col-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:6}
+.col-resizer:hover,.col-resizer:active{background:rgba(35,109,160,.35)}
 .tracking-table td{height:52px;background:#fff}
 [data-density="compact"] .tracking-table td{height:40px;padding-top:2px;padding-bottom:2px}
 [data-density="compact"] .tracking-table input,[data-density="compact"] .tracking-table select{height:28px}
@@ -122,7 +122,7 @@ input[type=text],textarea,select{font:inherit}
 .tracking-table .money-input{text-align:right;font-variant-numeric:tabular-nums}
 .tracking-table .amount{display:block;text-align:right;padding:0 3px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tracking-table .center{text-align:center}
-.tracking-table .quote-title{min-width:300px}
+.tracking-table .quote-title{min-width:0}
 .tracking-empty{padding:52px 20px!important;text-align:center;color:#7b8994;background:#fff!important}
 .file-drop{min-height:42px;display:flex;flex-direction:column;justify-content:center;gap:3px;text-align:center;border:1px dashed transparent;border-radius:5px}
 .file-drop.dragging{border-color:#2e83b8;background:#eaf6fd}
@@ -140,7 +140,7 @@ input[type=text],textarea,select{font:inherit}
 .contact-editor{flex:1;overflow:auto;padding:18px;background:#f2f5f8}
 .contact-card{max-width:980px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
 .contact-title{padding:15px 18px;background:var(--navy);color:#fff;font-size:17px;font-weight:800}
-.contact-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;padding:14px;border-bottom:1px solid var(--line)}
+.contact-form{display:grid;grid-template-columns:1fr 1fr 1fr 1.25fr auto;gap:8px;padding:14px;border-bottom:1px solid var(--line)}
 .contact-form input{min-width:0;border:1px solid #c7d3dc;border-radius:6px;padding:9px}
 .contact-form button{border:0;border-radius:6px;padding:8px 15px;background:var(--navy);color:#fff;font-weight:800}
 .contact-table th{text-align:center}
@@ -210,6 +210,5 @@ body.tracking-output.print-fit .tracking-table{width:1950px;min-width:1950px;zoo
   .sheet{scroll-margin-top:10px}
   .brand-logo{width:140px}
   .head,.task{grid-template-columns:34px minmax(120px,1fr) 82px 32px}
-  .translator{grid-template-columns:1fr}
   .contact-form{grid-template-columns:1fr}
 }
