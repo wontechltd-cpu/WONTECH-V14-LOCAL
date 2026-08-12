@@ -1,8 +1,48 @@
 {
   "name": "wontech-v14-local",
-  "version": "14.1.6",
-  "description": "WONTECH 업무메모 + 견적 + 발주 + 첨부파일 통합 로컬 프로그램",
+  "version": "14.1.7",
+  "description": "WONTECH 업무메모 + 견적 + 발주 + 견적관리 통합 로컬 프로그램",
   "main": "main.js",
   "author": "WONTECH",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never",
+    "dist:x64": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "43.3.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "net.wontech.workmanager.v14",
+    "productName": "WONTECH 업무관리 V14",
+    "artifactName": "WONTECH_업무관리_V14_${version}_${arch}.${ext}",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "**/*",
+      "!.github/**",
+      "!release/**",
+      "!electron-tmp*/**",
+      "!node-compile-cache/**",
+      "!translator.html",
+      "!translator.js",
+      "!node_modules/.cache/**"
+    ],
+    "win": {
+      "icon": "assets/WontechQuote.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "WONTECH 업무관리 V14",
+      "uninstallDisplayName": "WONTECH 업무관리 V14"
+    }
+  }
 }
