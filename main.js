@@ -41,21 +41,25 @@ const editorIntegration=`
   if(!window.wontech)return;
   const params=new URLSearchParams(location.search);
   const requested=params.get('type')==='order'?'order':'quote';
+  const requestedLanguage=params.get('lang')==='en'?'en':'ko';
   let currentDocId=params.get('docId')||'';
   localStorage.removeItem('wontechQuote');
 
   async function saveToManager(){
     const t=typeof totals==='function'?totals():{g:0};
     if(!currentDocId)currentDocId=(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
+    const currentPayload=typeof payload==='function'?payload():null;
     const rec={
       id:currentDocId,
       type:document.getElementById('docType')?.value||requested,
+      language:currentPayload?.docLanguage||requestedLanguage,
+      currency:currentPayload?.currency||document.getElementById('currency')?.value||'KRW',
       date:document.getElementById('date')?.value||'',
       item:document.getElementById('item')?.value||'',
       client:document.getElementById('client')?.value||'',
       contact:document.getElementById('contact')?.value||'',
       total:t.g||0,
-      payload:typeof payload==='function'?payload():null,
+      payload:currentPayload,
       updatedAt:new Date().toISOString()
     };
     await window.wontech.saveDocument(rec);
@@ -65,6 +69,7 @@ const editorIntegration=`
   try{
     const logo=await window.wontech.getLogo();
     if(logo)document.querySelectorAll('.logo img').forEach(img=>img.src=logo);
+    if(typeof setDocumentLanguage==='function')setDocumentLanguage(requestedLanguage);
     if(currentDocId){
       const rec=await window.wontech.getDocument(currentDocId);
       if(rec&&rec.payload&&typeof apply==='function')apply(rec.payload);
@@ -100,12 +105,12 @@ const editorIntegration=`
   if(actions){
     const loadLabel=actions.querySelector('.file-button');
     const historyButton=document.createElement('button');
-    historyButton.id='saveHistoryButton';historyButton.type='button';historyButton.textContent='이력 저장';
+    historyButton.id='saveHistoryButton';historyButton.type='button';historyButton.textContent=requestedLanguage==='en'?'이력 저장 / Save History':'이력 저장';
     historyButton.onclick=()=>window.saveHistory();
     actions.insertBefore(historyButton,loadLabel||null);
 
     const folderButton=document.createElement('button');
-    folderButton.id='outputFolderButton';folderButton.type='button';folderButton.textContent='저장 위치';
+    folderButton.id='outputFolderButton';folderButton.type='button';folderButton.textContent=requestedLanguage==='en'?'저장 위치 / Save Location':'저장 위치';
     folderButton.onclick=async()=>{
       const selected=await window.wontech.chooseOutputDirectory();
       if(selected&&typeof toast==='function')toast('파일 저장 위치를 '+selected+' 폴더로 설정했습니다.');
@@ -115,6 +120,7 @@ const editorIntegration=`
       button.classList.remove('primary');
       button.addEventListener('click',()=>{button.classList.add('action-active');setTimeout(()=>button.classList.remove('action-active'),550);});
     });
+    if(typeof applyEditorControlLanguage==='function')applyEditorControlLanguage();
   }
 
   const editorStyle=document.createElement('style');
@@ -149,11 +155,11 @@ const editorIntegration=`
 })();
 `;
 
-function openEditor(type='quote',docId=''){
-  const name='editor-'+(docId||Date.now());
+function openEditor(type='quote',docId='',language='ko'){
+  const name='editor-'+(docId||language+'-'+Date.now());
   const win=new BrowserWindow(windowOpts({width:1450,height:940,minWidth:620,minHeight:520}));
   windows.set(name,win);win.on('closed',()=>windows.delete(name));
-  win.loadFile('WontechQuote.html',{query:{type,docId}});
+  win.loadFile('WontechQuote.html',{query:{type,docId,lang:language}});
   win.maximize();
   win.webContents.once('did-finish-load',()=>{
     win.webContents.executeJavaScript(editorIntegration).catch(err=>console.error('editor integration',err));
@@ -176,7 +182,7 @@ ipcMain.handle('window:open',(_,kind,arg)=>{
   else if(kind==='quote-manager')openManager('quote');
   else if(kind==='order-manager')openManager('order');
   else if(kind==='quote-tracking'){const win=createNamed('quote-tracking','quote-tracking.html',{width:1500,height:850,minWidth:540,minHeight:480});win.maximize();}
-  else if(kind==='editor')openEditor(arg?.type||'quote',arg?.docId||'');
+  else if(kind==='editor')openEditor(arg?.type||'quote',arg?.docId||'',arg?.language||'ko');
   return true;
 });
 ipcMain.handle('window:top',(event,value)=>{const w=BrowserWindow.fromWebContents(event.sender);w.setAlwaysOnTop(!!value);return w.isAlwaysOnTop();});

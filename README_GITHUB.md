@@ -1,4 +1,4 @@
-# WONTECH 업무관리 V14.1.8 — GitHub Windows 빌드
+# WONTECH 업무관리 V14.1.9 — GitHub Windows 빌드
 
 이 프로젝트를 GitHub에 올리면 GitHub Actions가 Windows에서 설치파일을 직접 만듭니다.
 
@@ -14,7 +14,7 @@
 
 ## 업로드 직후 꼭 확인하세요
 
-- 저장소의 `package.json`을 열었을 때 버전이 `14.1.8`이고 `"dist": "electron-builder --win nsis --x64 --publish never"`가 보여야 합니다.
+- 저장소의 `package.json`을 열었을 때 버전이 `14.1.9`이고 `"dist": "electron-builder --win nsis --x64 --publish never"`가 보여야 합니다.
 - 저장소의 `.github/workflows/build-windows.yml`을 열었을 때 `node-version: '24'`가 보여야 합니다.
 - 위 두 항목 중 하나라도 다르면 일부 파일만 업로드된 것이므로, ZIP 안의 파일과 폴더 전체를 다시 업로드하세요.
 
@@ -35,3 +35,4 @@ Artifact를 받으면 ZIP으로 다운로드됩니다. 압축을 풀고 안에 �
 - 기존 V14 데이터 폴더를 그대로 사용
 - Google번역/GPT번역 사이트 바로 연결(API 키 불필요)
 - 별도 폴더설정 창에서 폴더 버튼 이름·연결 경로 10개 관리
+- 견적관리의 영문견적작성 버튼, 한·영 병기 견적서, KRW/USD 금액단위 선택
