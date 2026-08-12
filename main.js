@@ -42,6 +42,7 @@ const editorIntegration=`
   const params=new URLSearchParams(location.search);
   const requested=params.get('type')==='order'?'order':'quote';
   let currentDocId=params.get('docId')||'';
+  localStorage.removeItem('wontechQuote');
 
   async function saveToManager(){
     const t=typeof totals==='function'?totals():{g:0};
@@ -68,7 +69,10 @@ const editorIntegration=`
       const rec=await window.wontech.getDocument(currentDocId);
       if(rec&&rec.payload&&typeof apply==='function')apply(rec.payload);
       if(typeof setDocType==='function')setDocType((rec&&rec.type)||requested);
-    }else if(typeof setDocType==='function')setDocType(requested);
+    }else{
+      if(typeof setDocType==='function')setDocType(requested);
+      if(typeof newQuote==='function')newQuote();
+    }
   }catch(e){console.error('V14 editor init',e);if(typeof setDocType==='function')setDocType(requested);}
 
   window.saveHistory=async function(){
@@ -86,8 +90,9 @@ const editorIntegration=`
     if(created===false)return false;
     currentDocId='';
     if(typeof setDocType==='function')setDocType(mode);
-    document.querySelectorAll('.sheet input,.sheet textarea,.sheet select,.sheet button').forEach(control=>{control.disabled=false;control.readOnly=false;});
-    requestAnimationFrame(()=>document.getElementById('client')?.focus());
+    document.body.classList.remove('export-mode');
+    document.querySelectorAll('.sheet input,.sheet textarea,.sheet select,.sheet button').forEach(control=>{control.disabled=false;control.readOnly=false;control.removeAttribute('aria-disabled');});
+    requestAnimationFrame(()=>{const first=document.querySelector('.line input');if(first){first.focus();first.select()}else document.getElementById('client')?.focus();});
     return true;
   };
 
