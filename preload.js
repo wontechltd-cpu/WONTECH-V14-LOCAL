@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld('wontech',{
   open:(kind,arg)=>ipcRenderer.invoke('window:open',kind,arg),
   close:()=>ipcRenderer.invoke('window:close'),
   top:value=>ipcRenderer.invoke('window:top',value),
-  openExternal:url=>ipcRenderer.invoke('external:open',url),
+  openExternal:(url,browser)=>ipcRenderer.invoke('external:open',url,browser),
   listDocuments:type=>ipcRenderer.invoke('docs:list',type),
   getDocument:id=>ipcRenderer.invoke('docs:get',id),
   saveDocument:doc=>ipcRenderer.invoke('docs:save',doc),

@@ -12,7 +12,8 @@ let midnightTimer=null;
 let daySyncRunning=false;
 
 const pad=value=>String(value).padStart(2,'0');
-const defaultQuickLinks=()=>Array.from({length:6},(_,index)=>({name:`링크${index+1}`,url:''}));
+const defaultQuickLinks=()=>Array.from({length:10},(_,index)=>({name:`링크${index+1}`,browser:'default',url:''}));
+const browserLabels={default:'기본 브라우저',chrome:'Chrome',edge:'Edge',whale:'Whale'};
 
 function keyFromDate(date){
   return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
@@ -41,6 +42,7 @@ function normalizeQuickLinks(value){
   const saved=Array.isArray(value)?value:[];
   return defaultQuickLinks().map((fallback,index)=>({
     name:String(saved[index]?.name||fallback.name).trim().slice(0,12)||fallback.name,
+    browser:['default','chrome','edge','whale'].includes(saved[index]?.browser)?saved[index].browser:'default',
     url:String(saved[index]?.url||'').trim()
   }));
 }
@@ -113,7 +115,7 @@ function makeDay(key){
     activeDate=key;
     document.querySelectorAll('.sheet').forEach(item=>item.classList.toggle('active-sheet',item.dataset.date===key));
   };
-  section.querySelector('.summary').innerHTML=`<span>전체 ${items.length}</span><span class="done-c">완료 ${items.filter(item=>item.status==='done').length}</span><span class="pending-c">미처리 ${items.filter(item=>item.status==='pending').length}</span><span class="check-c">누적 체크 ${checklist.length}</span>`;
+  section.querySelector('.summary').innerHTML=`<span>전체 ${items.length}</span><span class="done-c">완료 ${items.filter(item=>item.status==='done').length}</span><span class="pending-c">미처리 ${items.filter(item=>item.status==='pending').length}</span>`;
   return section;
 }
 
@@ -208,7 +210,7 @@ function renderQuickLinks(){
   document.querySelectorAll('.quick-link').forEach((button,index)=>{
     const item=quickLinks[index]||defaultQuickLinks()[index];
     button.textContent=item.name;
-    button.title=item.url?`${item.name}\n${item.url}`:`${item.name} - 링크설정에서 주소를 입력하세요`;
+    button.title=item.url?`${item.name} · ${browserLabels[item.browser]||browserLabels.default}\n${item.url}`:`${item.name} - 링크설정에서 주소를 입력하세요`;
     button.classList.toggle('configured',!!item.url);
   });
 }
@@ -228,7 +230,8 @@ function fillQuickLinkRows(){
   quickLinks.forEach((item,index)=>{
     const row=document.createElement('div');
     row.className='quick-link-row';
-    row.innerHTML=`<span class="quick-link-number">${index+1}</span><input class="quick-link-name-input" maxlength="12" value="${esc(item.name)}" placeholder="버튼 이름"><input class="quick-link-url-input" value="${esc(item.url)}" placeholder="예: www.naver.com">`;
+    row.innerHTML=`<span class="quick-link-number">${index+1}</span><input class="quick-link-name-input" maxlength="12" value="${esc(item.name)}" placeholder="버튼 이름"><select class="quick-link-browser-input" title="사용할 브라우저"><option value="default">기본 브라우저</option><option value="chrome">Chrome</option><option value="edge">Edge</option><option value="whale">Whale</option></select><input class="quick-link-url-input" value="${esc(item.url)}" placeholder="예: www.naver.com">`;
+    row.querySelector('.quick-link-browser-input').value=item.browser||'default';
     rows.append(row);
   });
 }
@@ -246,9 +249,10 @@ async function saveQuickLinkSettings(){
   const updated=[];
   for(let index=0;index<rows.length;index++){
     const name=rows[index].querySelector('.quick-link-name-input').value.trim()||`링크${index+1}`;
+    const browser=rows[index].querySelector('.quick-link-browser-input').value;
     const rawUrl=rows[index].querySelector('.quick-link-url-input').value.trim();
     try{
-      updated.push({name:name.slice(0,12),url:normalizeUrl(rawUrl)});
+      updated.push({name:name.slice(0,12),browser,url:normalizeUrl(rawUrl)});
     }catch{
       alert(`${index+1}번 링크 주소를 확인해 주세요.`);
       rows[index].querySelector('.quick-link-url-input').focus();
@@ -259,13 +263,13 @@ async function saveQuickLinkSettings(){
   await wontech.set('quickLinks',quickLinks);
   renderQuickLinks();
   $('#quickLinkDialog').close();
-  showNote('자주 쓰는 링크 6개를 저장했습니다.');
+  showNote('자주 쓰는 링크 10개를 저장했습니다.');
 }
 
-async function openExternal(url,name){
+async function openExternal(url,name,browser='default'){
   try{
-    const opened=await wontech.openExternal(url);
-    if(!opened)showNote(`${name} 사이트 주소를 열지 못했습니다.`);
+    const result=await wontech.openExternal(url,browser);
+    if(!result?.success)showNote(result?.message||`${name} 사이트 주소를 열지 못했습니다.`);
   }catch{
     showNote(`${name} 사이트 주소를 열지 못했습니다.`);
   }
@@ -361,7 +365,7 @@ document.querySelectorAll('.quick-link').forEach((button,index)=>{
   button.onclick=()=>{
     const item=quickLinks[index];
     if(!item?.url){openQuickLinkSettings(index);return;}
-    openExternal(item.url,item.name);
+    openExternal(item.url,item.name,item.browser||'default');
   };
   button.oncontextmenu=event=>{
     event.preventDefault();

@@ -39,10 +39,10 @@ button{cursor:pointer}
 .toolbar .nav-button:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.48)}
 .toolbar .nav-button.primary{background:#fff;color:var(--navy-deep);border-color:#fff}
 .toolbar .nav-button.accent{background:#d9ecf8;color:#173f5e;border-color:#d9ecf8}
-.toolbar-tools{display:flex;align-items:center;gap:5px;margin-left:auto;min-width:0}
+.toolbar-tools{display:flex;align-items:center;gap:5px;margin-left:auto;min-width:0;flex-wrap:wrap}
 .toolbar .tool-button{padding:7px 8px}
 .nav-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:10px;background:#d9ecf8;color:#173d67;font-size:10px;font-weight:900;font-variant-numeric:tabular-nums}
-.quick-links{display:flex;align-items:center;gap:4px;min-width:0}
+.quick-links{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 520px;flex-wrap:wrap}
 .toolbar .quick-link{max-width:72px;min-width:43px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 7px;background:rgba(217,236,248,.12);border-color:rgba(217,236,248,.28);color:#eaf6fd}
 .toolbar .quick-link.configured{background:#e8f4fb;border-color:#e8f4fb;color:#1d506f}
 .toolbar .link-settings-button{padding:7px 8px;background:#d9ecf8;color:#173f5e;border-color:#d9ecf8}
@@ -166,9 +166,9 @@ dialog::backdrop{background:rgba(18,34,47,.45)}
 .quick-link-dialog-body{min-width:0}
 .dialog-help{margin:0;color:#61717d;font-size:11px;line-height:1.5}
 .quick-link-rows{display:grid;gap:8px}
-.quick-link-row{display:grid;grid-template-columns:28px 125px minmax(260px,1fr);align-items:center;gap:8px}
+.quick-link-row{display:grid;grid-template-columns:28px 115px 125px minmax(240px,1fr);align-items:center;gap:8px}
 .quick-link-number{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;background:#e8f1f7;color:var(--navy);font-size:11px;font-weight:900}
-.quick-link-row input{min-width:0;border:1px solid #c9d4dc;border-radius:6px;padding:8px 9px}
+.quick-link-row input,.quick-link-row select{min-width:0;border:1px solid #c9d4dc;border-radius:6px;padding:8px 9px;background:#fff}
 
 body.output-mode{background:#fff}
 body.output-mode .toolbar,body.output-mode .workspace-bar,body.output-mode .older{display:none!important}
@@ -223,6 +223,6 @@ body.tracking-output.print-fit .tracking-table{width:1950px;min-width:1950px;zoo
   .head,.task{grid-template-columns:34px minmax(120px,1fr) 82px 32px}
   .quick-links{flex-wrap:wrap;justify-content:flex-end}
   .quick-link-row{grid-template-columns:28px 1fr}
-  .quick-link-row input.quick-link-url-input{grid-column:2}
+  .quick-link-row select,.quick-link-row input.quick-link-url-input{grid-column:2}
   .contact-form{grid-template-columns:1fr}
 }

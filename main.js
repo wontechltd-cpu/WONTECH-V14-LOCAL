@@ -2,6 +2,7 @@ const {app,BrowserWindow,ipcMain,dialog,shell}=require('electron');
 const path=require('path');
 const fs=require('fs');
 const crypto=require('crypto');
+const {spawn}=require('child_process');
 
 const windows=new Map();
 const iconPath=path.join(__dirname,'assets','WontechQuote.ico');
@@ -175,13 +176,48 @@ ipcMain.handle('window:open',(_,kind,arg)=>{
 });
 ipcMain.handle('window:top',(event,value)=>{const w=BrowserWindow.fromWebContents(event.sender);w.setAlwaysOnTop(!!value);return w.isAlwaysOnTop();});
 ipcMain.handle('window:close',event=>{const w=BrowserWindow.fromWebContents(event.sender);if(w&&!w.isDestroyed())w.close();return true;});
-ipcMain.handle('external:open',async(_,value)=>{
+function browserExecutable(browser){
+  const programFiles=process.env.PROGRAMFILES||'';
+  const programFilesX86=process.env['PROGRAMFILES(X86)']||'';
+  const localAppData=process.env.LOCALAPPDATA||'';
+  const join=(base,...parts)=>base?path.join(base,...parts):'';
+  const candidates={
+    chrome:[
+      join(programFiles,'Google','Chrome','Application','chrome.exe'),
+      join(programFilesX86,'Google','Chrome','Application','chrome.exe'),
+      join(localAppData,'Google','Chrome','Application','chrome.exe')
+    ],
+    edge:[
+      join(programFilesX86,'Microsoft','Edge','Application','msedge.exe'),
+      join(programFiles,'Microsoft','Edge','Application','msedge.exe'),
+      join(localAppData,'Microsoft','Edge','Application','msedge.exe')
+    ],
+    whale:[
+      join(localAppData,'Naver','Naver Whale','Application','whale.exe'),
+      join(programFiles,'Naver','Naver Whale','Application','whale.exe'),
+      join(programFilesX86,'Naver','Naver Whale','Application','whale.exe')
+    ]
+  };
+  return (candidates[browser]||[]).find(filePath=>filePath&&fs.existsSync(filePath))||'';
+}
+
+const browserNames={chrome:'Chrome',edge:'Edge',whale:'Whale'};
+
+ipcMain.handle('external:open',async(_,value,browser='default')=>{
   try{
     const url=new URL(String(value||''));
-    if(url.protocol!=='https:'&&url.protocol!=='http:')return false;
-    await shell.openExternal(url.href);
-    return true;
-  }catch{return false;}
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return {success:false,message:'웹사이트 주소를 확인해 주세요.'};
+    if(browser==='default'){
+      await shell.openExternal(url.href);
+      return {success:true};
+    }
+    const executable=browserExecutable(browser);
+    if(!executable)return {success:false,message:`${browserNames[browser]||'선택한 브라우저'}가 이 PC에 설치되어 있는지 확인해 주세요.`};
+    const child=spawn(executable,[url.href],{detached:true,stdio:'ignore',windowsHide:true});
+    child.once('error',error=>console.error('browser open',error));
+    child.unref();
+    return {success:true};
+  }catch{return {success:false,message:'웹사이트 주소를 확인해 주세요.'};}
 });
 
 function archiveAttachments(recordId,sourcePaths=[]){
