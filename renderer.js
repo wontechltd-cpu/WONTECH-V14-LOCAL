@@ -50,7 +50,14 @@ function normalizeQuickLinks(value){
 
 function normalizeFolderShortcuts(value){
   const saved=Array.isArray(value)?value:[];
-  return Array.from({length:10},(_,index)=>String(saved[index]||'').trim());
+  return Array.from({length:10},(_,index)=>{
+    const item=saved[index];
+    if(typeof item==='string')return {name:`폴더${index+1}`,path:item.trim()};
+    return {
+      name:String(item?.name||`폴더${index+1}`).trim().slice(0,12)||`폴더${index+1}`,
+      path:String(item?.path||'').trim()
+    };
+  });
 }
 
 function updateChecklistCount(total=checklist.length){
@@ -223,39 +230,86 @@ function renderQuickLinks(){
 
 function renderFolderShortcuts(){
   document.querySelectorAll('.folder-shortcut').forEach((button,index)=>{
-    const folder=folderShortcuts[index]||'';
-    button.textContent=`폴더${index+1}`;
-    button.title=folder?`폴더${index+1} 열기\n${folder}\n마우스 오른쪽 클릭: 폴더 다시 지정`:`폴더${index+1} - 클릭하여 연결할 폴더 지정`;
-    button.classList.toggle('configured',!!folder);
+    const item=folderShortcuts[index]||{name:`폴더${index+1}`,path:''};
+    button.textContent=item.name;
+    button.title=item.path?`${item.name} 열기\n${item.path}\n마우스 오른쪽 클릭: 폴더 설정`:`${item.name} - 폴더설정에서 연결할 폴더를 지정하세요`;
+    button.classList.toggle('configured',!!item.path);
   });
 }
 
 async function chooseFolderShortcut(index){
   try{
-    const result=await wontech.chooseFolderShortcut(index);
+    const draftRows=[...document.querySelectorAll('.folder-row')];
+    if(draftRows.length===10){
+      folderShortcuts=draftRows.map((row,rowIndex)=>({
+        name:(row.querySelector('.folder-name-input').value.trim()||`폴더${rowIndex+1}`).slice(0,12),
+        path:row.querySelector('.folder-path-input').value.trim()
+      }));
+    }
+    const item=folderShortcuts[index]||{name:`폴더${index+1}`,path:''};
+    const result=await wontech.chooseFolderShortcut(index,item.path);
     if(!result?.success)return;
-    folderShortcuts[index]=result.path||'';
-    renderFolderShortcuts();
-    showNote(`폴더${index+1} 바로가기를 지정했습니다.`);
+    item.path=result.path||'';
+    folderShortcuts[index]=item;
+    fillFolderRows();
   }catch(error){
-    showNote(error?.message||`폴더${index+1}을 지정하지 못했습니다.`);
+    alert(error?.message||`폴더${index+1}을 지정하지 못했습니다.`);
   }
 }
 
 async function openFolderShortcut(index){
-  if(!folderShortcuts[index]){await chooseFolderShortcut(index);return;}
+  const item=folderShortcuts[index]||{name:`폴더${index+1}`,path:''};
+  if(!item.path){openFolderSettings(index);return;}
   try{
     const result=await wontech.openFolderShortcut(index);
     if(result?.success)return;
     if(result?.needsSetup){
       showNote(result.message);
-      await chooseFolderShortcut(index);
+      openFolderSettings(index);
       return;
     }
-    showNote(result?.message||`폴더${index+1}을 열지 못했습니다.`);
+    showNote(result?.message||`${item.name}을 열지 못했습니다.`);
   }catch(error){
-    showNote(error?.message||`폴더${index+1}을 열지 못했습니다.`);
+    showNote(error?.message||`${item.name}을 열지 못했습니다.`);
   }
+}
+
+function fillFolderRows(){
+  const rows=$('#folderRows');
+  if(!rows)return;
+  rows.innerHTML='';
+  folderShortcuts.forEach((item,index)=>{
+    const row=document.createElement('div');
+    row.className='folder-row';
+    row.dataset.folderIndex=String(index);
+    row.innerHTML=`<span class="quick-link-number">${index+1}</span><input class="folder-name-input" maxlength="12" value="${esc(item.name)}" placeholder="폴더${index+1}"><input class="folder-path-input" value="${esc(item.path)}" placeholder="연결된 폴더 없음" readonly><div class="folder-row-actions"><button type="button" class="choose-folder-button">폴더 선택</button><button type="button" class="clear-folder-button" title="연결 해제">해제</button></div>`;
+    row.querySelector('.choose-folder-button').onclick=()=>chooseFolderShortcut(index);
+    row.querySelector('.clear-folder-button').onclick=()=>{
+      folderShortcuts[index].path='';
+      row.querySelector('.folder-path-input').value='';
+    };
+    rows.append(row);
+  });
+}
+
+function openFolderSettings(focusIndex=-1){
+  folderShortcuts=normalizeFolderShortcuts(folderShortcuts);
+  fillFolderRows();
+  const dialog=$('#folderDialog');
+  if(!dialog.open)dialog.showModal();
+  if(focusIndex>=0)setTimeout(()=>dialog.querySelectorAll('.folder-name-input')[focusIndex]?.focus(),50);
+}
+
+async function saveFolderSettings(){
+  const rows=[...document.querySelectorAll('.folder-row')];
+  folderShortcuts=rows.map((row,index)=>({
+    name:(row.querySelector('.folder-name-input').value.trim()||`폴더${index+1}`).slice(0,12),
+    path:row.querySelector('.folder-path-input').value.trim()
+  }));
+  await wontech.set('folderShortcuts',folderShortcuts);
+  renderFolderShortcuts();
+  $('#folderDialog').close();
+  showNote('폴더 이름과 연결 위치를 저장했습니다.');
 }
 
 function normalizeUrl(value){
@@ -405,6 +459,9 @@ $('#jpg').onclick=()=>withOutput(async sheet=>{
 $('#editLinks').onclick=()=>openQuickLinkSettings();
 $('#saveLinks').onclick=saveQuickLinkSettings;
 $('#cancelLinks').onclick=()=>$('#quickLinkDialog').close();
+$('#editFolders').onclick=()=>openFolderSettings();
+$('#saveFolders').onclick=saveFolderSettings;
+$('#cancelFolders').onclick=()=>$('#folderDialog').close();
 
 document.querySelectorAll('.quick-link').forEach((button,index)=>{
   button.onclick=()=>{
@@ -422,7 +479,7 @@ document.querySelectorAll('.folder-shortcut').forEach((button,index)=>{
   button.onclick=()=>openFolderShortcut(index);
   button.oncontextmenu=event=>{
     event.preventDefault();
-    chooseFolderShortcut(index);
+    openFolderSettings(index);
   };
 });
 

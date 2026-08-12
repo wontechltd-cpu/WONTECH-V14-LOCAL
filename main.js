@@ -227,14 +227,21 @@ function folderShortcutIndex(value){
 
 function savedFolderShortcuts(){
   const saved=getStore('folderShortcuts');
-  return Array.from({length:10},(_,index)=>String(Array.isArray(saved)?saved[index]||'':'').trim());
+  return Array.from({length:10},(_,index)=>{
+    const value=Array.isArray(saved)?saved[index]:null;
+    if(typeof value==='string')return {name:`폴더${index+1}`,path:value.trim()};
+    return {
+      name:String(value?.name||`폴더${index+1}`).trim().slice(0,12)||`폴더${index+1}`,
+      path:String(value?.path||'').trim()
+    };
+  });
 }
 
 ipcMain.handle('folder-shortcut:choose',async(event,value)=>{
-  const index=folderShortcutIndex(value);
+  const index=folderShortcutIndex(value?.index??value);
   if(index<0)return {success:false,message:'폴더 번호가 올바르지 않습니다.'};
-  const folders=savedFolderShortcuts();
-  const current=folders[index];
+  const saved=savedFolderShortcuts()[index];
+  const current=String(value?.currentPath||saved.path||'').trim();
   const owner=BrowserWindow.fromWebContents(event.sender);
   const result=await dialog.showOpenDialog(owner,{
     title:`폴더${index+1} 바로가기 지정`,
@@ -242,17 +249,16 @@ ipcMain.handle('folder-shortcut:choose',async(event,value)=>{
     properties:['openDirectory','createDirectory']
   });
   if(result.canceled||!result.filePaths[0])return {success:false,canceled:true,path:current};
-  folders[index]=result.filePaths[0];
-  setStore('folderShortcuts',folders);
-  return {success:true,path:folders[index]};
+  return {success:true,path:result.filePaths[0]};
 });
 
 ipcMain.handle('folder-shortcut:open',async(_,value)=>{
   const index=folderShortcutIndex(value);
   if(index<0)return {success:false,message:'폴더 번호가 올바르지 않습니다.'};
-  const target=savedFolderShortcuts()[index];
+  const item=savedFolderShortcuts()[index];
+  const target=item.path;
   if(!target||!fs.existsSync(target)||!fs.statSync(target).isDirectory()){
-    return {success:false,needsSetup:true,message:`폴더${index+1}에 연결할 폴더를 지정해 주세요.`};
+    return {success:false,needsSetup:true,message:`${item.name}에 연결할 폴더를 지정해 주세요.`};
   }
   const message=await shell.openPath(target);
   return message?{success:false,message}:{success:true,path:target};

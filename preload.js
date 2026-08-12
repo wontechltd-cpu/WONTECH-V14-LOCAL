@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('wontech',{
   close:()=>ipcRenderer.invoke('window:close'),
   top:value=>ipcRenderer.invoke('window:top',value),
   openExternal:(url,browser)=>ipcRenderer.invoke('external:open',url,browser),
-  chooseFolderShortcut:index=>ipcRenderer.invoke('folder-shortcut:choose',index),
+  chooseFolderShortcut:(index,currentPath)=>ipcRenderer.invoke('folder-shortcut:choose',{index,currentPath}),
   openFolderShortcut:index=>ipcRenderer.invoke('folder-shortcut:open',index),
   listDocuments:type=>ipcRenderer.invoke('docs:list',type),
   getDocument:id=>ipcRenderer.invoke('docs:get',id),

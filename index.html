@@ -64,6 +64,7 @@
           <button type="button" class="tool-button folder-shortcut" data-folder-index="7">폴더8</button>
           <button type="button" class="tool-button folder-shortcut" data-folder-index="8">폴더9</button>
           <button type="button" class="tool-button folder-shortcut" data-folder-index="9">폴더10</button>
+          <button id="editFolders" type="button" class="tool-button folder-settings-button" title="폴더 이름과 연결 위치 설정">폴더설정</button>
         </div>
       </div>
     </div>
@@ -84,6 +85,18 @@
     <div class="dialog-actions">
       <button id="cancelLinks" type="button">취소</button>
       <button id="saveLinks" type="button" class="primary">저장</button>
+    </div>
+  </dialog>
+  <dialog id="folderDialog" class="folder-dialog">
+    <div class="dialog-title">자주 쓰는 폴더 10개 설정</div>
+    <div class="dialog-body folder-dialog-body">
+      <p class="dialog-help">상단에 표시할 이름을 입력하고, 각 버튼에 연결할 Windows 폴더를 선택하세요.</p>
+      <div class="folder-row-header"><span>번호</span><span>버튼 이름</span><span>연결된 폴더</span><span>선택</span></div>
+      <div id="folderRows" class="folder-rows"></div>
+    </div>
+    <div class="dialog-actions">
+      <button id="cancelFolders" type="button">취소</button>
+      <button id="saveFolders" type="button" class="primary">저장</button>
     </div>
   </dialog>
   <script src="renderer.js"></script>
