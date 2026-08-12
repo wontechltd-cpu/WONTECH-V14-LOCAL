@@ -105,12 +105,12 @@ const editorIntegration=`
   if(actions){
     const loadLabel=actions.querySelector('.file-button');
     const historyButton=document.createElement('button');
-    historyButton.id='saveHistoryButton';historyButton.type='button';historyButton.textContent=requestedLanguage==='en'?'이력 저장 / Save History':'이력 저장';
+    historyButton.id='saveHistoryButton';historyButton.type='button';historyButton.textContent='이력 저장';
     historyButton.onclick=()=>window.saveHistory();
     actions.insertBefore(historyButton,loadLabel||null);
 
     const folderButton=document.createElement('button');
-    folderButton.id='outputFolderButton';folderButton.type='button';folderButton.textContent=requestedLanguage==='en'?'저장 위치 / Save Location':'저장 위치';
+    folderButton.id='outputFolderButton';folderButton.type='button';folderButton.textContent='저장 위치';
     folderButton.onclick=async()=>{
       const selected=await window.wontech.chooseOutputDirectory();
       if(selected&&typeof toast==='function')toast('파일 저장 위치를 '+selected+' 폴더로 설정했습니다.');

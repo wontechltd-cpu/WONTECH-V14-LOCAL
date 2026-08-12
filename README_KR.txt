@@ -1,4 +1,4 @@
-WONTECH 업무메모 + 견적작성 + 발주관리 + 견적관리 통합 V14.1.9 - Windows Local
+WONTECH 업무메모 + 견적작성 + 발주관리 + 견적관리 통합 V14.2.0 - Windows Local
 
 [구성]
 - 메인 업무메모: 밤 12시 자동 날짜 전환, 미처리 이월, 미처리/완료/체크, 체크 색상 구분
@@ -20,7 +20,7 @@ WONTECH 업무메모 + 견적작성 + 발주관리 + 견적관리 통합 V14.1.9
 방법 1) BUILD_WINDOWS.bat
 1. Node.js LTS 설치
 2. 이 폴더에서 BUILD_WINDOWS.bat 실행 (최초 빌드 시 인터넷 필요)
-3. release 폴더 안의 WONTECH_업무관리_V14_14.1.9_x64.exe 사용
+3. release 폴더 안의 WONTECH_업무관리_V14_14.2.0_x64.exe 사용
 4. 일반 업무메모·견적·발주 기능은 인터넷 없이 사용할 수 있습니다. Google번역/GPT번역 사이트 연결만 인터넷이 필요합니다.
 
 방법 2) GitHub Actions
