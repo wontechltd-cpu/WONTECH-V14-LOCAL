@@ -29,7 +29,15 @@
     </nav>
     <div class="toolbar-tools">
       <label class="top-toggle" title="창을 다른 창보다 항상 위에 표시"><input id="top" type="checkbox"><span>항상 위</span></label>
-      <div id="quickLinks" class="quick-links" aria-label="자주 쓰는 링크">
+      <span class="sep" aria-hidden="true"></span>
+      <button id="jpg" class="tool-button">JPG</button>
+      <button id="pdf" class="tool-button">PDF</button>
+      <button id="print" class="tool-button">인쇄</button>
+    </div>
+    <div class="shortcut-strip">
+      <div class="shortcut-group web-shortcuts">
+        <span class="shortcut-label">웹</span>
+        <div id="quickLinks" class="quick-links" aria-label="자주 쓰는 링크">
         <button type="button" class="tool-button quick-link" data-link-index="0">링크1</button>
         <button type="button" class="tool-button quick-link" data-link-index="1">링크2</button>
         <button type="button" class="tool-button quick-link" data-link-index="2">링크3</button>
@@ -41,11 +49,23 @@
         <button type="button" class="tool-button quick-link" data-link-index="8">링크9</button>
         <button type="button" class="tool-button quick-link" data-link-index="9">링크10</button>
         <button id="editLinks" type="button" class="tool-button link-settings-button" title="링크 이름과 주소 수정">링크설정</button>
+        </div>
       </div>
-      <span class="sep" aria-hidden="true"></span>
-      <button id="jpg" class="tool-button">JPG</button>
-      <button id="pdf" class="tool-button">PDF</button>
-      <button id="print" class="tool-button">인쇄</button>
+      <div class="shortcut-group folder-shortcuts-wrap">
+        <span class="shortcut-label">폴더</span>
+        <div id="folderShortcuts" class="folder-shortcuts" aria-label="자주 쓰는 폴더">
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="0">폴더1</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="1">폴더2</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="2">폴더3</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="3">폴더4</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="4">폴더5</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="5">폴더6</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="6">폴더7</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="7">폴더8</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="8">폴더9</button>
+          <button type="button" class="tool-button folder-shortcut" data-folder-index="9">폴더10</button>
+        </div>
+      </div>
     </div>
   </header>
   <div class="workspace-bar">

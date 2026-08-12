@@ -11,7 +11,7 @@ let storePath;
 // V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
 app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],folderShortcuts:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -218,6 +218,44 @@ ipcMain.handle('external:open',async(_,value,browser='default')=>{
     child.unref();
     return {success:true};
   }catch{return {success:false,message:'웹사이트 주소를 확인해 주세요.'};}
+});
+
+function folderShortcutIndex(value){
+  const index=Number(value);
+  return Number.isInteger(index)&&index>=0&&index<10?index:-1;
+}
+
+function savedFolderShortcuts(){
+  const saved=getStore('folderShortcuts');
+  return Array.from({length:10},(_,index)=>String(Array.isArray(saved)?saved[index]||'':'').trim());
+}
+
+ipcMain.handle('folder-shortcut:choose',async(event,value)=>{
+  const index=folderShortcutIndex(value);
+  if(index<0)return {success:false,message:'폴더 번호가 올바르지 않습니다.'};
+  const folders=savedFolderShortcuts();
+  const current=folders[index];
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const result=await dialog.showOpenDialog(owner,{
+    title:`폴더${index+1} 바로가기 지정`,
+    defaultPath:current&&fs.existsSync(current)?current:app.getPath('documents'),
+    properties:['openDirectory','createDirectory']
+  });
+  if(result.canceled||!result.filePaths[0])return {success:false,canceled:true,path:current};
+  folders[index]=result.filePaths[0];
+  setStore('folderShortcuts',folders);
+  return {success:true,path:folders[index]};
+});
+
+ipcMain.handle('folder-shortcut:open',async(_,value)=>{
+  const index=folderShortcutIndex(value);
+  if(index<0)return {success:false,message:'폴더 번호가 올바르지 않습니다.'};
+  const target=savedFolderShortcuts()[index];
+  if(!target||!fs.existsSync(target)||!fs.statSync(target).isDirectory()){
+    return {success:false,needsSetup:true,message:`폴더${index+1}에 연결할 폴더를 지정해 주세요.`};
+  }
+  const message=await shell.openPath(target);
+  return message?{success:false,message}:{success:true,path:target};
 });
 
 function archiveAttachments(recordId,sourcePaths=[]){

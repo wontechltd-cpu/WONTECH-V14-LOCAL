@@ -4,6 +4,7 @@ const days=$('#days');
 let memo={tasksByDate:{},rollLastDate:null};
 let checklist=[];
 let quickLinks=[];
+let folderShortcuts=[];
 let visible=30;
 let activeDate=null;
 let logoData='';
@@ -45,6 +46,11 @@ function normalizeQuickLinks(value){
     browser:['default','chrome','edge','whale'].includes(saved[index]?.browser)?saved[index].browser:'default',
     url:String(saved[index]?.url||'').trim()
   }));
+}
+
+function normalizeFolderShortcuts(value){
+  const saved=Array.isArray(value)?value:[];
+  return Array.from({length:10},(_,index)=>String(saved[index]||'').trim());
 }
 
 function updateChecklistCount(total=checklist.length){
@@ -215,6 +221,43 @@ function renderQuickLinks(){
   });
 }
 
+function renderFolderShortcuts(){
+  document.querySelectorAll('.folder-shortcut').forEach((button,index)=>{
+    const folder=folderShortcuts[index]||'';
+    button.textContent=`폴더${index+1}`;
+    button.title=folder?`폴더${index+1} 열기\n${folder}\n마우스 오른쪽 클릭: 폴더 다시 지정`:`폴더${index+1} - 클릭하여 연결할 폴더 지정`;
+    button.classList.toggle('configured',!!folder);
+  });
+}
+
+async function chooseFolderShortcut(index){
+  try{
+    const result=await wontech.chooseFolderShortcut(index);
+    if(!result?.success)return;
+    folderShortcuts[index]=result.path||'';
+    renderFolderShortcuts();
+    showNote(`폴더${index+1} 바로가기를 지정했습니다.`);
+  }catch(error){
+    showNote(error?.message||`폴더${index+1}을 지정하지 못했습니다.`);
+  }
+}
+
+async function openFolderShortcut(index){
+  if(!folderShortcuts[index]){await chooseFolderShortcut(index);return;}
+  try{
+    const result=await wontech.openFolderShortcut(index);
+    if(result?.success)return;
+    if(result?.needsSetup){
+      showNote(result.message);
+      await chooseFolderShortcut(index);
+      return;
+    }
+    showNote(result?.message||`폴더${index+1}을 열지 못했습니다.`);
+  }catch(error){
+    showNote(error?.message||`폴더${index+1}을 열지 못했습니다.`);
+  }
+}
+
 function normalizeUrl(value){
   const input=String(value||'').trim();
   if(!input)return '';
@@ -313,11 +356,13 @@ async function init(){
   memo.tasksByDate=memo.tasksByDate||{};
   checklist=await wontech.get('checklist')||[];
   quickLinks=normalizeQuickLinks(await wontech.get('quickLinks'));
+  folderShortcuts=normalizeFolderShortcuts(await wontech.get('folderShortcuts'));
   logoData=await wontech.getLogo();
   liveDateKey=workDate();
   rollover();
   await saveAll();
   renderQuickLinks();
+  renderFolderShortcuts();
   render();
   go(liveDateKey);
   syncToolbarHeight();
@@ -370,6 +415,14 @@ document.querySelectorAll('.quick-link').forEach((button,index)=>{
   button.oncontextmenu=event=>{
     event.preventDefault();
     openQuickLinkSettings(index);
+  };
+});
+
+document.querySelectorAll('.folder-shortcut').forEach((button,index)=>{
+  button.onclick=()=>openFolderShortcut(index);
+  button.oncontextmenu=event=>{
+    event.preventDefault();
+    chooseFolderShortcut(index);
   };
 });
 
