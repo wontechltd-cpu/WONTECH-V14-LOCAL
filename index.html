@@ -19,7 +19,7 @@
     <nav class="primary-nav" aria-label="주요 기능">
       <button id="today" class="nav-button" title="오늘 업무로 이동">오늘</button>
       <button id="add" class="nav-button primary" title="오늘 업무 추가">＋ 업무</button>
-      <button id="checklist" class="nav-button" title="체크리스트 열기">체크</button>
+      <button id="checklist" class="nav-button" title="장기 체크리스트 열기">체크 <span id="checklistCount" class="nav-count">0</span></button>
       <button id="quoteManager" class="nav-button" title="견적 작성 및 이력관리">견적</button>
       <button id="orderManager" class="nav-button" title="발주 작성 및 이력관리">발주</button>
       <button id="attachments" class="nav-button" title="견적·입찰·담당자·첨부파일 관리">견적관리</button>
@@ -29,6 +29,15 @@
     </nav>
     <div class="toolbar-tools">
       <label class="top-toggle" title="창을 다른 창보다 항상 위에 표시"><input id="top" type="checkbox"><span>항상 위</span></label>
+      <div id="quickLinks" class="quick-links" aria-label="자주 쓰는 링크">
+        <button type="button" class="tool-button quick-link" data-link-index="0">링크1</button>
+        <button type="button" class="tool-button quick-link" data-link-index="1">링크2</button>
+        <button type="button" class="tool-button quick-link" data-link-index="2">링크3</button>
+        <button type="button" class="tool-button quick-link" data-link-index="3">링크4</button>
+        <button type="button" class="tool-button quick-link" data-link-index="4">링크5</button>
+        <button type="button" class="tool-button quick-link" data-link-index="5">링크6</button>
+        <button id="editLinks" type="button" class="tool-button link-settings-button" title="링크 이름과 주소 수정">링크설정</button>
+      </div>
       <span class="sep" aria-hidden="true"></span>
       <button id="jpg" class="tool-button">JPG</button>
       <button id="pdf" class="tool-button">PDF</button>
@@ -42,6 +51,17 @@
   <main id="days" class="days"></main>
   <button id="older" class="older">이전 날짜 30일 더 보기</button>
   <div id="note" class="output-note" role="status"></div>
+  <dialog id="quickLinkDialog" class="quick-link-dialog">
+    <div class="dialog-title">자주 쓰는 링크 6개 설정</div>
+    <div class="dialog-body quick-link-dialog-body">
+      <p class="dialog-help">버튼 이름과 웹사이트 주소를 입력하세요. 주소 앞의 https://는 생략해도 됩니다.</p>
+      <div id="quickLinkRows" class="quick-link-rows"></div>
+    </div>
+    <div class="dialog-actions">
+      <button id="cancelLinks" type="button">취소</button>
+      <button id="saveLinks" type="button" class="primary">저장</button>
+    </div>
+  </dialog>
   <script src="renderer.js"></script>
 </body>
 </html>

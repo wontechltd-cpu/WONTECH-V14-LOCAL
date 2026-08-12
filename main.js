@@ -10,7 +10,7 @@ let storePath;
 // V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
 app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -175,7 +175,14 @@ ipcMain.handle('window:open',(_,kind,arg)=>{
 });
 ipcMain.handle('window:top',(event,value)=>{const w=BrowserWindow.fromWebContents(event.sender);w.setAlwaysOnTop(!!value);return w.isAlwaysOnTop();});
 ipcMain.handle('window:close',event=>{const w=BrowserWindow.fromWebContents(event.sender);if(w&&!w.isDestroyed())w.close();return true;});
-ipcMain.handle('external:open',(_,url)=>shell.openExternal(url));
+ipcMain.handle('external:open',async(_,value)=>{
+  try{
+    const url=new URL(String(value||''));
+    if(url.protocol!=='https:'&&url.protocol!=='http:')return false;
+    await shell.openExternal(url.href);
+    return true;
+  }catch{return false;}
+});
 
 function archiveAttachments(recordId,sourcePaths=[]){
   const safeId=String(recordId||'unassigned').replace(/[^a-zA-Z0-9_-]/g,'_');
