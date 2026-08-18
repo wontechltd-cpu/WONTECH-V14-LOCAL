@@ -9,4 +9,6 @@
     const source=event.target.closest('.product-photo-preview img');if(!source)return;
     image.src=source.src;image.alt=source.alt||'확대 제품 사진';viewer.showModal();
   });
+  document.addEventListener('dragover',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files'))event.preventDefault();});
+  document.addEventListener('drop',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files'))event.preventDefault();});
 })();

@@ -1,4 +1,4 @@
-# WONTECH 업무관리 V14.3.3 — GitHub Windows 빌드
+# WONTECH 업무관리 V14.3.4 — GitHub Windows 빌드
 
 이 프로젝트를 GitHub에 올리면 GitHub Actions가 Windows에서 설치파일을 직접 만듭니다.
 
@@ -14,7 +14,7 @@
 
 ## 업로드 직후 꼭 확인하세요
 
-- 저장소의 `package.json`을 열었을 때 버전이 `14.3.3`이고 `"dist": "electron-builder --win nsis --x64 --publish never"`가 보여야 합니다.
+- 저장소의 `package.json`을 열었을 때 버전이 `14.3.4`이고 `"dist": "electron-builder --win nsis --x64 --publish never"`가 보여야 합니다.
 - 저장소의 `.github/workflows/build-windows.yml`을 열었을 때 `node-version: '24'`가 보여야 합니다.
 - 위 두 항목 중 하나라도 다르면 일부 파일만 업로드된 것이므로, ZIP 안의 파일과 폴더 전체를 다시 업로드하세요.
 
@@ -46,3 +46,7 @@ Artifact를 받으면 ZIP으로 다운로드됩니다. 압축을 풀고 안에 �
 - ASAP관리 필터·저장: 요청회사/담당자/처리상태 필터와 필터 결과 엑셀/JPG/PDF A4 가로 저장
 - ASAP관리 프린트: 현재 필터 결과를 A4 가로로 인쇄
 - 재고/ASAP 사진: 버튼·드래그 첨부 및 썸네일 클릭 3배 확대 보기
+- 드래그 첨부 안정화: 파일 경로가 아닌 실제 파일 데이터로 재고·ASAP 사진과 견적관리 첨부파일 보관
+- 재고 이력: 입출고 전체/입고/출고 이력을 분리하여 조회·출력, 고유번호 직접 입력
+- 전체 백업·복원: 프로그램 데이터와 내부 사진·첨부파일을 `.wontech-backup`으로 저장하고 복원
+- 전체 Excel 백업: 업무메모·체크·견적/발주·견적관리·담당자·재고·입출고·ASAP를 시트별 저장

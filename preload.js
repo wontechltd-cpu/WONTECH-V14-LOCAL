@@ -16,9 +16,11 @@ contextBridge.exposeInMainWorld('wontech',{
   deleteDocument:id=>ipcRenderer.invoke('docs:delete',id),
   pickAttachments:recordId=>ipcRenderer.invoke('attachment:pick',recordId),
   archiveAttachments:(recordId,paths)=>ipcRenderer.invoke('attachment:archive',recordId,paths),
+  archiveAttachmentBytes:(recordId,uploads)=>ipcRenderer.invoke('attachment:archive-bytes',recordId,uploads),
   openAttachment:filePath=>ipcRenderer.invoke('attachment:open',filePath),
   pickManagedImage:(scope,recordId)=>ipcRenderer.invoke('managed-image:pick',{scope,recordId}),
   archiveManagedImage:(scope,recordId,filePath)=>ipcRenderer.invoke('managed-image:archive',{scope,recordId,filePath}),
+  archiveManagedImageBytes:(scope,recordId,fileName,bytes)=>ipcRenderer.invoke('managed-image:archive-bytes',{scope,recordId,fileName,bytes}),
   readManagedImage:filePath=>ipcRenderer.invoke('managed-image:read',filePath),
   removeManagedImage:filePath=>ipcRenderer.invoke('managed-image:remove',filePath),
   pathForFile:file=>webUtils.getPathForFile(file),
@@ -27,5 +29,9 @@ contextBridge.exposeInMainWorld('wontech',{
   saveImage:(dataUrl,name)=>ipcRenderer.invoke('output:image',dataUrl,name),
   saveBytes:(bytes,name)=>ipcRenderer.invoke('output:bytes',bytes,name),
   getOutputDirectory:()=>ipcRenderer.invoke('output:directory:get'),
-  chooseOutputDirectory:()=>ipcRenderer.invoke('output:directory:choose')
+  chooseOutputDirectory:()=>ipcRenderer.invoke('output:directory:choose'),
+  exportFullBackup:()=>ipcRenderer.invoke('backup:export'),
+  importFullBackup:()=>ipcRenderer.invoke('backup:import'),
+  exportExcelBackup:()=>ipcRenderer.invoke('backup:excel'),
+  restartApp:()=>ipcRenderer.invoke('app:restart')
 });

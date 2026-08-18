@@ -221,10 +221,13 @@ $('trackingBody').addEventListener('click',async event=>{
 $('trackingBody').addEventListener('drop',async event=>{
   const zone=event.target.closest('.file-drop');if(!zone)return;
   const item=state.items.find(x=>x.id===zone.dataset.recordId);if(!item)return;
-  const paths=Array.from(event.dataTransfer.files||[]).map(file=>{try{return wontech.pathForFile(file)}catch{return ''}}).filter(Boolean);
-  if(!paths.length){showNote('끌어다 놓은 파일 경로를 확인하지 못했습니다. 첨부 버튼을 이용해 주세요.');return;}
-  const files=await wontech.archiveAttachments(item.id,paths);await addFiles(item,files);
+  const dropped=Array.from(event.dataTransfer.files||[]);if(!dropped.length)return;
+  const accepted=dropped.filter(file=>file.size<=100*1024*1024);if(accepted.length!==dropped.length)showNote('100MB를 넘는 파일은 제외했습니다.');
+  const uploads=await Promise.all(accepted.map(async file=>({name:file.name,bytes:new Uint8Array(await file.arrayBuffer())})));
+  const files=await wontech.archiveAttachmentBytes(item.id,uploads);if(!files.length){showNote('끌어놓은 파일을 첨부하지 못했습니다.');return;}await addFiles(item,files);
 });
+document.addEventListener('dragover',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files'))event.preventDefault();});
+document.addEventListener('drop',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files'))event.preventDefault();});
 
 document.querySelector('.tracking-tabs').addEventListener('click',event=>{
   const button=event.target.closest('button[data-tab]');if(!button)return;activeTab=button.dataset.tab;render();

@@ -277,9 +277,21 @@ ipcMain.handle('folder-shortcut:open',async(_,value)=>{
   return message?{success:false,message}:{success:true,path:target};
 });
 
+function attachmentBase(){return path.join(app.getPath('userData'),'wontech-v14-attachments');}
+function isArchivedAttachment(filePath){if(!filePath)return false;return path.resolve(String(filePath)).startsWith(path.resolve(attachmentBase())+path.sep);}
+function ipcBuffer(value){
+  if(Buffer.isBuffer(value))return value;
+  if(ArrayBuffer.isView(value))return Buffer.from(value.buffer,value.byteOffset,value.byteLength);
+  if(value instanceof ArrayBuffer)return Buffer.from(value);
+  if(Array.isArray(value))return Buffer.from(value);
+  return Buffer.alloc(0);
+}
+function safeStoredName(value,fallback='file'){
+  return path.basename(String(value||fallback)).replace(/[<>:"/\\|?*\x00-\x1f]/g,'_').slice(0,180)||fallback;
+}
 function archiveAttachments(recordId,sourcePaths=[]){
   const safeId=String(recordId||'unassigned').replace(/[^a-zA-Z0-9_-]/g,'_');
-  const targetDir=path.join(app.getPath('userData'),'wontech-v14-attachments',safeId);
+  const targetDir=path.join(attachmentBase(),safeId);
   fs.mkdirSync(targetDir,{recursive:true});
   const saved=[];
   sourcePaths.forEach((source,index)=>{
@@ -292,6 +304,18 @@ function archiveAttachments(recordId,sourcePaths=[]){
       const stat=fs.statSync(target);
       saved.push({id:crypto.randomUUID(),name:original,path:target,size:stat.size,addedAt:new Date().toISOString()});
     }catch(err){console.error('attachment archive',err);}
+  });
+  return saved;
+}
+function archiveAttachmentBytes(recordId,uploads=[]){
+  const safeId=String(recordId||'unassigned').replace(/[^a-zA-Z0-9_-]/g,'_'),targetDir=path.join(attachmentBase(),safeId);fs.mkdirSync(targetDir,{recursive:true});
+  const saved=[];
+  uploads.forEach((upload,index)=>{
+    try{
+      const buffer=ipcBuffer(upload?.bytes);if(!buffer.length||buffer.length>100*1024*1024)return;
+      const original=safeStoredName(upload?.name,`attachment-${index+1}`),token=`${Date.now()}-${index}-${crypto.randomBytes(3).toString('hex')}`,target=path.join(targetDir,`${token}-${original}`);
+      fs.writeFileSync(target,buffer);saved.push({id:crypto.randomUUID(),name:original,path:target,size:buffer.length,addedAt:new Date().toISOString()});
+    }catch(error){console.error('attachment bytes archive',error);}
   });
   return saved;
 }
@@ -319,6 +343,12 @@ function archiveManagedImage(scope,recordId,source){
   fs.copyFileSync(source,target);
   return {id:crypto.randomUUID(),name:original,path:target,addedAt:new Date().toISOString()};
 }
+function archiveManagedImageBytes(scope,recordId,fileName,bytes){
+  const extension=path.extname(String(fileName||'')).toLowerCase(),buffer=ipcBuffer(bytes);if(!['.jpg','.jpeg','.png','.webp','.bmp'].includes(extension)||!buffer.length||buffer.length>25*1024*1024)return null;
+  const targetDir=managedImagePath(scope,recordId);fs.mkdirSync(targetDir,{recursive:true});
+  const original=safeStoredName(fileName,`photo${extension}`),target=path.join(targetDir,`${Date.now()}-${crypto.randomBytes(3).toString('hex')}${extension}`);fs.writeFileSync(target,buffer);
+  return {id:crypto.randomUUID(),name:original,path:target,addedAt:new Date().toISOString()};
+}
 
 ipcMain.handle('managed-image:pick',async(event,value={})=>{
   const owner=BrowserWindow.fromWebContents(event.sender);
@@ -330,6 +360,9 @@ ipcMain.handle('managed-image:pick',async(event,value={})=>{
 ipcMain.handle('managed-image:archive',(_,value={})=>{
   const saved=archiveManagedImage(value.scope,value.recordId,value.filePath);
   return saved?{...saved,dataUrl:dataUrlFromFile(saved.path)}:null;
+});
+ipcMain.handle('managed-image:archive-bytes',(_,value={})=>{
+  const saved=archiveManagedImageBytes(value.scope,value.recordId,value.fileName,value.bytes);return saved?{...saved,dataUrl:dataUrlFromFile(saved.path)}:null;
 });
 ipcMain.handle('managed-image:read',(_,filePath)=>isManagedImage(filePath)&&fs.existsSync(filePath)?dataUrlFromFile(filePath):'');
 ipcMain.handle('managed-image:remove',(_,filePath)=>{
@@ -344,8 +377,9 @@ ipcMain.handle('attachment:pick',async(event,recordId)=>{
   return archiveAttachments(recordId,r.filePaths);
 });
 ipcMain.handle('attachment:archive',(_,recordId,paths)=>archiveAttachments(recordId,Array.isArray(paths)?paths:[]));
+ipcMain.handle('attachment:archive-bytes',(_,recordId,uploads)=>archiveAttachmentBytes(recordId,Array.isArray(uploads)?uploads:[]));
 ipcMain.handle('attachment:open',async(_,filePath)=>{
-  if(!filePath||!fs.existsSync(filePath))return '첨부파일을 찾을 수 없습니다.';
+  if(!isArchivedAttachment(filePath)||!fs.existsSync(filePath))return '첨부파일을 찾을 수 없습니다.';
   return shell.openPath(filePath);
 });
 
@@ -378,6 +412,78 @@ async function chooseOutputPath(event,fileName,filters){
   const r=await dialog.showSaveDialog(owner,{defaultPath:fileName,filters});
   return r.canceled?'':r.filePath;
 }
+
+function backupStamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;}
+function archivedFileKind(filePath){
+  if(!filePath)return '';
+  const target=path.resolve(String(filePath)),managed=path.resolve(managedImageBase())+path.sep,attachments=path.resolve(attachmentBase())+path.sep;
+  return target.startsWith(managed)?'managed-image':target.startsWith(attachments)?'attachment':'';
+}
+function collectBackupFiles(value,files=[],seen=new Set()){
+  if(!value||typeof value!=='object')return files;
+  if(typeof value.path==='string'){
+    const kind=archivedFileKind(value.path),resolved=path.resolve(value.path);
+    if(kind&&!seen.has(resolved)&&fs.existsSync(resolved)&&fs.statSync(resolved).isFile()){
+      seen.add(resolved);const buffer=fs.readFileSync(resolved);files.push({kind,oldPath:value.path,name:value.name||path.basename(resolved),size:buffer.length,data:buffer.toString('base64')});
+    }
+  }
+  Object.values(value).forEach(child=>collectBackupFiles(child,files,seen));return files;
+}
+function fullBackupPayload(){const store=readStore();return{format:'wontech-v14-complete-backup',schemaVersion:1,appVersion:'14.3.4',createdAt:new Date().toISOString(),store,files:collectBackupFiles(store)};}
+function replaceBackupPaths(value,pathMap){
+  if(Array.isArray(value))return value.map(item=>replaceBackupPaths(item,pathMap));
+  if(!value||typeof value!=='object')return value;
+  const result={};for(const[key,child]of Object.entries(value))result[key]=key==='path'&&typeof child==='string'&&pathMap.has(child)?pathMap.get(child):replaceBackupPaths(child,pathMap);return result;
+}
+function restoreBackupPayload(payload){
+  if(payload?.format!=='wontech-v14-complete-backup'||!payload.store||typeof payload.store!=='object')throw Error('WONTECH 전체 백업파일 형식이 아닙니다.');
+  const token=`${backupStamp()}-${crypto.randomBytes(3).toString('hex')}`,pathMap=new Map();let restoredFiles=0;
+  for(const file of Array.isArray(payload.files)?payload.files:[]){
+    if(!['managed-image','attachment'].includes(file.kind)||!file.oldPath||!file.data)continue;
+    const buffer=Buffer.from(file.data,'base64');if(!buffer.length||buffer.length>150*1024*1024)continue;
+    const base=file.kind==='managed-image'?managedImageBase():attachmentBase(),directory=path.join(base,'restored',token),target=uniqueOutputPath(directory,safeStoredName(file.name,'restored-file'));
+    fs.writeFileSync(target,buffer);pathMap.set(file.oldPath,target);restoredFiles++;
+  }
+  const restored=replaceBackupPaths(payload.store,pathMap);writeStore({...defaults(),...restored});return{restoredFiles,createdAt:payload.createdAt||''};
+}
+function excelEsc(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
+function excelCell(value){
+  const simple=value&&typeof value==='object'?JSON.stringify(value):value,type=typeof simple==='number'&&Number.isFinite(simple)?'Number':'String';return `<Cell><Data ss:Type="${type}">${excelEsc(simple)}</Data></Cell>`;
+}
+function excelSheet(name,headers,rows){
+  const safeName=String(name).replace(/[\\/?*\[\]:]/g,' ').slice(0,31)||'데이터';return `<Worksheet ss:Name="${excelEsc(safeName)}"><Table><Row>${headers.map(excelCell).join('')}</Row>${rows.map(row=>`<Row>${row.map(excelCell).join('')}</Row>`).join('')}</Table></Worksheet>`;
+}
+function completeExcelBackup(store){
+  const sheets=[],memoRows=[];
+  Object.entries(store.memoData?.tasksByDate||{}).forEach(([date,tasks])=>(Array.isArray(tasks)?tasks:[]).forEach(task=>memoRows.push([date,task.text||'',task.status||'',task.id||'',task.origin||''])));
+  sheets.push(excelSheet('업무메모',['날짜','업무내용','상태','ID','원본ID'],memoRows));
+  sheets.push(excelSheet('체크리스트',['날짜','내용','상태','ID'],(store.checklist||[]).map(item=>[item.date||'',item.text||'',item.status||'',item.id||''])));
+  sheets.push(excelSheet('견적발주이력',['구분','언어','통화','작성일','품목','수신처','담당자','합계','수정일','ID'],(store.documents||[]).map(item=>[item.type||'',item.language||'',item.currency||'',item.date||'',item.item||'',item.client||'',item.contact||'',Number(item.total)||0,item.updatedAt||'',item.id||''])));
+  const tracking=store.quoteTracking||{};
+  sheets.push(excelSheet('견적관리',['견적제목','단위','수량','견적단가','입찰단가','요청회사','부서','담당자','메일','제출일','입찰일','입찰유무','비고','첨부파일'],(tracking.items||[]).map(item=>[item.title||'',item.unit||'',Number(item.qty)||0,Number(item.quoteUnitPrice)||0,Number(item.bidUnitPrice)||0,item.company||'',item.department||'',item.contact||'',item.contactEmail||'',item.submittedDate||'',item.bidDate||'',item.bidStatus||'',item.note||'',(item.attachments||[]).map(file=>file.name).join(', ')])));
+  sheets.push(excelSheet('담당자',['요청회사','부서','담당자','메일','ID'],(tracking.contacts||[]).map(item=>[item.company||'',item.department||'',item.contact||'',item.email||'',item.id||''])));
+  const inventory=store.inventoryData||{};
+  sheets.push(excelSheet('재고목록',['고유번호','품명','규격','매입단가','판매단가','재고수량','누적매입','누적불출','비고','사진'],(inventory.items||[]).map(item=>[item.number||'',item.name||'',item.spec||'',Number(item.buyPrice)||0,Number(item.sellPrice)||0,Number(item.stockQty)||0,Number(item.purchaseQty)||0,Number(item.issueQty)||0,item.note||'',item.photo?.name||''])));
+  sheets.push(excelSheet('재고입고이력',['날짜','고유번호','품명','수량','매입처','메모','처리후재고'],(inventory.purchases||[]).map(item=>[item.date||'',item.itemNumber||'',item.itemName||'',Number(item.quantity)||0,item.supplier||'',item.note||'',Number(item.afterStock)||0])));
+  sheets.push(excelSheet('재고출고이력',['날짜','고유번호','품명','수량','사용처','불출사유','처리후재고'],(inventory.issues||[]).map(item=>[item.date||'',item.itemNumber||'',item.itemName||'',Number(item.quantity)||0,item.destination||'',item.reason||'',Number(item.afterStock)||0])));
+  sheets.push(excelSheet('ASAP관리',['ASAP내용','요청회사','담당자','요청일','처리일','요청금액','확정금액','결재처리','처리방법','비고','사진'],(store.asapData?.items||[]).map(item=>[item.content||'',item.company||'',item.manager||'',item.requestDate||'',item.processDate||'',Number(item.requestAmount)||0,Number(item.confirmedAmount)||0,item.status||'',item.method||'',item.note||'',item.photo?.name||''])));
+  sheets.push(excelSheet('바로가기',['종류','이름','주소 또는 경로','브라우저'],[...(store.quickLinks||[]).map(item=>['웹',item.name||'',item.url||'',item.browser||'']),...(store.folderShortcuts||[]).map(item=>['폴더',item.name||'',item.path||'',''])]));
+  return `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${sheets.join('')}</Workbook>`;
+}
+
+ipcMain.handle('backup:export',async event=>{
+  const filePath=await chooseOutputPath(event,`WONTECH_전체백업_${backupStamp()}.wontech-backup`,[{name:'WONTECH 전체 백업',extensions:['wontech-backup']}]);if(!filePath)return{success:false,canceled:true};
+  const payload=fullBackupPayload();fs.writeFileSync(filePath,JSON.stringify(payload),'utf8');return{success:true,path:filePath,fileCount:payload.files.length};
+});
+ipcMain.handle('backup:excel',async event=>{
+  const filePath=await chooseOutputPath(event,`WONTECH_전체데이터_${backupStamp()}.xls`,[{name:'Excel 백업',extensions:['xls']}]);if(!filePath)return{success:false,canceled:true};
+  fs.writeFileSync(filePath,'\ufeff'+completeExcelBackup(readStore()),'utf8');return{success:true,path:filePath};
+});
+ipcMain.handle('backup:import',async event=>{
+  const owner=BrowserWindow.fromWebContents(event.sender),result=await dialog.showOpenDialog(owner,{title:'WONTECH 전체 백업 복원',properties:['openFile'],filters:[{name:'WONTECH 전체 백업',extensions:['wontech-backup']}]});if(result.canceled||!result.filePaths[0])return{success:false,canceled:true};
+  const payload=JSON.parse(fs.readFileSync(result.filePaths[0],'utf8')),restored=restoreBackupPayload(payload);return{success:true,...restored};
+});
+ipcMain.handle('app:restart',()=>{setTimeout(()=>{app.relaunch();app.exit(0);},150);return true;});
 
 ipcMain.handle('output:print',async(event,options={})=>new Promise(resolve=>event.sender.print({silent:false,printBackground:true,landscape:!!options.landscape},(success,reason)=>resolve({success,reason}))));
 ipcMain.handle('output:pdf',async(event,defaultName='WONTECH_업무메모',options={})=>{

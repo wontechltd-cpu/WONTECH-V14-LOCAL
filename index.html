@@ -28,6 +28,7 @@
       <button id="googleTranslate" class="nav-button" title="Google 번역 연결">구글번역</button>
       <button id="gptTranslate" class="nav-button" title="ChatGPT 번역 연결">GPT번역</button>
       <button id="changeLogo" class="nav-button" title="WONTECH 마크 교체">마크</button>
+      <button id="backupData" class="nav-button accent" title="전체 데이터 백업·복원">백업</button>
     </nav>
     <div class="toolbar-tools">
       <label class="top-toggle" title="창을 다른 창보다 항상 위에 표시"><input id="top" type="checkbox"><span>항상 위</span></label>
@@ -100,6 +101,19 @@
       <button id="cancelFolders" type="button">취소</button>
       <button id="saveFolders" type="button" class="primary">저장</button>
     </div>
+  </dialog>
+  <dialog id="backupDialog" class="backup-dialog">
+    <div class="dialog-title">WONTECH 전체 데이터 백업</div>
+    <div class="dialog-body backup-dialog-body">
+      <p class="dialog-help"><b>전체 백업</b>은 업무메모·체크·견적·발주·견적관리·재고·ASAP와 프로그램 내부에 보관된 사진·첨부파일까지 저장하며 다시 복원할 수 있습니다.</p>
+      <div class="backup-action-grid">
+        <button id="exportFullBackup" type="button"><strong>전체 백업파일 만들기</strong><span>컴퓨터 교체·고장·재설치에 대비한 복원용 파일</span></button>
+        <button id="exportExcelBackup" type="button"><strong>전체 엑셀 백업</strong><span>작성된 주요 데이터를 여러 시트로 정리한 조회용 Excel</span></button>
+        <button id="importFullBackup" type="button" class="restore-backup"><strong>전체 백업 복원</strong><span>저장해 둔 .wontech-backup 파일로 데이터 복구</span></button>
+      </div>
+      <p class="backup-warning">※ Excel 파일은 내용을 확인하기 위한 자료입니다. 사진과 첨부파일까지 완전히 복원하려면 반드시 ‘전체 백업파일’을 보관하세요.</p>
+    </div>
+    <div class="dialog-actions"><button id="closeBackup" type="button">닫기</button></div>
   </dialog>
   <script src="renderer.js"></script>
 </body>

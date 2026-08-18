@@ -10,14 +10,10 @@ let saveTimer=null;
 let purchaseItemId='';
 let issueItemId='';
 let historyItemId='';
+let historyMode='all';
 
-function nextInventoryNumber(){
-  const maximum=inventory.items.reduce((max,item)=>Math.max(max,Number(String(item.number||'').match(/(\d+)$/)?.[1]||0)),0);
-  return `WT-INV-${String(maximum+1).padStart(4,'0')}`;
-}
-
-function blankItem(){return{id:uid(),number:nextInventoryNumber(),photo:null,name:'',spec:'',buyPrice:0,sellPrice:0,stockQty:0,purchaseQty:0,issueQty:0,note:'',createdAt:new Date().toISOString()};}
-function normalizeItem(item){return{...blankItem(),...item,id:item.id||uid(),number:item.number||nextInventoryNumber(),photo:item.photo?.path?item.photo:null,buyPrice:number(item.buyPrice),sellPrice:number(item.sellPrice),stockQty:number(item.stockQty),purchaseQty:number(item.purchaseQty),issueQty:number(item.issueQty)};}
+function blankItem(){return{id:uid(),number:'',photo:null,name:'',spec:'',buyPrice:0,sellPrice:0,stockQty:0,purchaseQty:0,issueQty:0,note:'',createdAt:new Date().toISOString()};}
+function normalizeItem(item){return{...blankItem(),...item,id:item.id||uid(),number:item.number||'',photo:item.photo?.path?item.photo:null,buyPrice:number(item.buyPrice),sellPrice:number(item.sellPrice),stockQty:number(item.stockQty),purchaseQty:number(item.purchaseQty),issueQty:number(item.issueQty)};}
 function normalizePurchase(purchase){return{id:purchase.id||uid(),itemId:purchase.itemId||'',itemNumber:purchase.itemNumber||'',itemName:purchase.itemName||'',date:purchase.date||todayKey(),quantity:number(purchase.quantity),supplier:purchase.supplier||'',note:purchase.note||'',afterStock:number(purchase.afterStock),createdAt:purchase.createdAt||new Date().toISOString()};}
 function normalizeIssue(issue){return{id:issue.id||uid(),itemId:issue.itemId||'',itemNumber:issue.itemNumber||'',itemName:issue.itemName||'',date:issue.date||todayKey(),quantity:number(issue.quantity),destination:issue.destination||'',reason:issue.reason||'',afterStock:number(issue.afterStock),createdAt:issue.createdAt||new Date().toISOString()};}
 
@@ -30,7 +26,7 @@ function photoCell(item){
 }
 
 function rowHtml(item){
-  return `<tr data-id="${esc(item.id)}"><td><input class="record-number" data-field="number" value="${esc(item.number)}"></td><td>${photoCell(item)}</td><td><input data-field="name" value="${esc(item.name)}" placeholder="품명"></td><td><input data-field="spec" value="${esc(item.spec)}" placeholder="규격"></td><td><input class="money-input" data-field="buyPrice" value="${money(item.buyPrice)}" inputmode="numeric"></td><td><input class="money-input" data-field="sellPrice" value="${money(item.sellPrice)}" inputmode="numeric"></td><td><input class="stock-input" type="number" min="0" step="1" data-field="stockQty" value="${number(item.stockQty)}"></td><td><span class="cumulative">누적 ${number(item.purchaseQty)}</span><button type="button" class="purchase-open-button" data-action="purchase">매입 등록</button></td><td><span class="cumulative">누적 ${number(item.issueQty)}</span><button type="button" class="issue-open-button" data-action="issue" ${item.stockQty>0?'':'disabled'}>불출 등록</button></td><td><textarea data-field="note" placeholder="비고">${esc(item.note)}</textarea></td><td><div class="row-actions"><button type="button" class="history-button" data-action="history">이력</button><button type="button" class="delete-row" data-action="delete">삭제</button></div></td></tr>`;
+  return `<tr data-id="${esc(item.id)}"><td><input class="record-number" data-field="number" value="${esc(item.number)}" placeholder="직접 입력"></td><td>${photoCell(item)}</td><td><input data-field="name" value="${esc(item.name)}" placeholder="품명"></td><td><input data-field="spec" value="${esc(item.spec)}" placeholder="규격"></td><td><input class="money-input" data-field="buyPrice" value="${money(item.buyPrice)}" inputmode="numeric"></td><td><input class="money-input" data-field="sellPrice" value="${money(item.sellPrice)}" inputmode="numeric"></td><td><input class="stock-input" type="number" min="0" step="1" data-field="stockQty" value="${number(item.stockQty)}"></td><td><span class="cumulative">누적 ${number(item.purchaseQty)}</span><button type="button" class="purchase-open-button" data-action="purchase">매입 등록</button></td><td><span class="cumulative">누적 ${number(item.issueQty)}</span><button type="button" class="issue-open-button" data-action="issue" ${item.stockQty>0?'':'disabled'}>불출 등록</button></td><td><textarea data-field="note" placeholder="비고">${esc(item.note)}</textarea></td><td><div class="row-actions"><button type="button" class="history-button" data-action="history">이력</button><button type="button" class="delete-row" data-action="delete">삭제</button></div></td></tr>`;
 }
 
 async function hydratePhotos(){
@@ -57,20 +53,24 @@ function renderList(){
 function historyRows(){
   const purchases=inventory.purchases.map(entry=>({...entry,type:'매입',partner:entry.supplier,detail:entry.note}));
   const issues=inventory.issues.map(entry=>({...entry,type:'불출',partner:entry.destination,detail:entry.reason}));
-  const combined=[...purchases,...issues],rows=historyItemId?combined.filter(entry=>entry.itemId===historyItemId):combined;
+  let combined=historyMode==='purchase'?purchases:historyMode==='issue'?issues:[...purchases,...issues];
+  const rows=historyItemId?combined.filter(entry=>entry.itemId===historyItemId):combined;
   return rows.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||''));
 }
 function renderHistory(){
-  const item=inventory.items.find(entry=>entry.id===historyItemId);
-  $('inventoryHistoryTitle').textContent=item?`${item.number} · ${item.name||'품명 미입력'} 입출고 이력`:'전체 입출고 이력';
+  const item=inventory.items.find(entry=>entry.id===historyItemId),modeLabel={all:'입출고 이력',purchase:'입고이력',issue:'출고이력'}[historyMode];
+  $('inventoryHistoryTitle').textContent=item?`${item.number||'고유번호 미입력'} · ${item.name||'품명 미입력'} ${modeLabel}`:`전체 ${modeLabel}`;
   const rows=historyRows();$('inventoryHistoryCount').textContent=`${rows.length}건`;
   $('inventoryHistoryBody').innerHTML=rows.length?rows.map(entry=>`<tr><td><span class="transaction-badge ${entry.type==='매입'?'transaction-purchase':'transaction-issue'}">${entry.type}</span></td><td>${esc(entry.date)}</td><td>${esc(entry.itemNumber)}</td><td>${esc(entry.itemName)}</td><td>${number(entry.quantity)}</td><td>${esc(entry.partner)}</td><td>${esc(entry.detail)}</td><td>${number(entry.afterStock)}</td></tr>`).join(''):'<tr><td colspan="8" class="operations-empty">저장된 입출고 이력이 없습니다.</td></tr>';
 }
 
 function showView(view){
-  const history=view==='history';
+  const history=view!=='list';if(history)historyMode=['purchase','issue'].includes(view)?view:'all';
   $('inventoryListView').hidden=history;$('inventoryHistoryView').hidden=!history;
-  $('inventoryListTab').classList.toggle('active',!history);$('inventoryHistoryTab').classList.toggle('active',history);
+  $('inventoryListTab').classList.toggle('active',!history);
+  $('inventoryHistoryAllTab').classList.toggle('active',history&&historyMode==='all');
+  $('inventoryPurchaseHistoryTab').classList.toggle('active',history&&historyMode==='purchase');
+  $('inventoryIssueHistoryTab').classList.toggle('active',history&&historyMode==='issue');
   $('addInventory').hidden=history;
   if(history)renderHistory();else renderList();
 }
@@ -79,12 +79,12 @@ function findItem(target){const row=target.closest('tr[data-id]');return row?inv
 async function inventoryReportConfig(includeImages=false){
   const history=!$('inventoryHistoryView').hidden,logoSrc=$('inventoryLogo').src;
   if(history){
-    const item=inventory.items.find(entry=>entry.id===historyItemId),rows=historyRows();
+    const item=inventory.items.find(entry=>entry.id===historyItemId),rows=historyRows(),modeLabel={all:'입출고 이력',purchase:'입고이력',issue:'출고이력'}[historyMode];
     return{
-      title:'재고 입출고 이력',subtitle:'WONTECH INVENTORY TRANSACTION HISTORY',logoSrc,
+      title:`재고 ${modeLabel}`,subtitle:'WONTECH INVENTORY TRANSACTION HISTORY',logoSrc,
       meta:item?`${item.number} · ${item.name||'품명 미입력'}`:'전체 품목',
       summary:[`이력 ${rows.length.toLocaleString('ko-KR')}건`,`매입 ${rows.filter(row=>row.type==='매입').reduce((sum,row)=>sum+number(row.quantity),0).toLocaleString('ko-KR')}`,`불출 ${rows.filter(row=>row.type==='불출').reduce((sum,row)=>sum+number(row.quantity),0).toLocaleString('ko-KR')}`],
-      fileName:`WONTECH_재고입출고이력_${todayKey()}`,
+      fileName:`WONTECH_재고${modeLabel}_${todayKey()}`,
       columns:[{label:'구분',width:'8%'},{label:'날짜',width:'11%'},{label:'고유번호',width:'14%'},{label:'품명',width:'16%'},{label:'수량',width:'8%'},{label:'매입처/사용처',width:'16%'},{label:'메모/불출 사유',width:'18%'},{label:'처리 후 재고',width:'9%'}],
       rows:rows.map(entry=>[entry.type,entry.date,entry.itemNumber,entry.itemName,number(entry.quantity),entry.partner,entry.detail,number(entry.afterStock)])
     };
@@ -147,7 +147,8 @@ $('inventoryBody').addEventListener('dragleave',event=>{const box=event.target.c
 $('inventoryBody').addEventListener('drop',async event=>{
   const box=event.target.closest('.product-photo-preview');if(!box)return;event.preventDefault();box.classList.remove('drag-over');
   const item=inventory.items.find(entry=>entry.id===box.dataset.photoId),file=event.dataTransfer.files?.[0];if(!item||!file)return;
-  const filePath=wontech.pathForFile(file),selected=await wontech.archiveManagedImage('inventory',item.id,filePath);
+  if(file.size>25*1024*1024){showNote('사진은 25MB 이하 파일만 첨부할 수 있습니다.');return;}
+  const bytes=new Uint8Array(await file.arrayBuffer()),selected=await wontech.archiveManagedImageBytes('inventory',item.id,file.name,bytes);
   if(!selected){showNote('JPG, PNG, WEBP, BMP 사진 파일만 끌어놓을 수 있습니다.');return;}await applyInventoryPhoto(item,selected);
 });
 $('inventoryBody').addEventListener('focusout',event=>{if(event.target.classList.contains('money-input'))event.target.value=money(event.target.value);});
@@ -190,9 +191,11 @@ $('issueForm').addEventListener('submit',async event=>{
   await saveNow();$('issueDialog').close();renderList();showNote(`${item.name||item.number} ${quantity}개를 불출하고 재고를 차감했습니다.`);
 });
 
-$('addInventory').onclick=async()=>{const item=blankItem();inventory.items.push(item);await saveNow();showView('list');setTimeout(()=>document.querySelector(`tr[data-id="${CSS.escape(item.id)}"] [data-field="name"]`)?.focus(),30);};
+$('addInventory').onclick=async()=>{const item=blankItem();inventory.items.push(item);await saveNow();showView('list');setTimeout(()=>document.querySelector(`tr[data-id="${CSS.escape(item.id)}"] [data-field="number"]`)?.focus(),30);};
 $('inventoryListTab').onclick=()=>{historyItemId='';showView('list');};
-$('inventoryHistoryTab').onclick=()=>{historyItemId='';showView('history');};
+$('inventoryHistoryAllTab').onclick=()=>{historyItemId='';showView('all');};
+$('inventoryPurchaseHistoryTab').onclick=()=>{historyItemId='';showView('purchase');};
+$('inventoryIssueHistoryTab').onclick=()=>{historyItemId='';showView('issue');};
 $('inventoryExcel').onclick=()=>exportInventory('excel');
 $('inventoryJpg').onclick=()=>exportInventory('jpg');
 $('inventoryPdf').onclick=()=>exportInventory('pdf');

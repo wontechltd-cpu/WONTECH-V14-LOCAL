@@ -177,6 +177,16 @@ dialog::backdrop{background:rgba(18,34,47,.45)}
 .quick-link-row input,.quick-link-row select{min-width:0;border:1px solid #c9d4dc;border-radius:6px;padding:8px 9px;background:#fff}
 .folder-dialog{width:min(860px,calc(100vw - 30px))}
 .folder-dialog-body{min-width:0}
+.backup-dialog{width:min(720px,calc(100vw - 30px))}
+.backup-dialog-body{min-width:0}
+.backup-action-grid{display:grid;gap:9px}
+.backup-action-grid button{display:grid;gap:4px;width:100%;border:1px solid #aebfcb;border-radius:8px;padding:13px 15px;background:#f7fafc;color:#243b4c;text-align:left;cursor:pointer}
+.backup-action-grid button:hover{border-color:#5f94b5;background:#edf6fb}
+.backup-action-grid button strong{font-size:13px;color:var(--navy)}
+.backup-action-grid button span{font-size:10px;color:#617481}
+.backup-action-grid .restore-backup{border-color:#d6b5b5;background:#fff8f8}
+.backup-action-grid .restore-backup strong{color:#963e3e}
+.backup-warning{margin:0;padding:10px;border-radius:6px;background:#fff6df;color:#775c19;font-size:10px;line-height:1.5}
 .folder-row-header,.folder-row{display:grid;grid-template-columns:40px 125px minmax(300px,1fr) 145px;align-items:center;gap:8px}
 .folder-row-header{padding:0 2px;color:#60717d;font-size:10px;font-weight:800;text-align:center}
 .folder-rows{display:grid;gap:8px}

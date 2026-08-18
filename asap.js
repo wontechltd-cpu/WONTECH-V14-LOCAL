@@ -103,7 +103,8 @@ $('asapBody').addEventListener('dragleave',event=>{const box=event.target.closes
 $('asapBody').addEventListener('drop',async event=>{
   const box=event.target.closest('.product-photo-preview');if(!box)return;event.preventDefault();box.classList.remove('drag-over');
   const item=asap.items.find(entry=>entry.id===box.dataset.photoId),file=event.dataTransfer.files?.[0];if(!item||!file)return;
-  const filePath=wontech.pathForFile(file),selected=await wontech.archiveManagedImage('asap',item.id,filePath);
+  if(file.size>25*1024*1024){showNote('사진은 25MB 이하 파일만 첨부할 수 있습니다.');return;}
+  const bytes=new Uint8Array(await file.arrayBuffer()),selected=await wontech.archiveManagedImageBytes('asap',item.id,file.name,bytes);
   if(!selected){showNote('JPG, PNG, WEBP, BMP 사진 파일만 끌어놓을 수 있습니다.');return;}await applyAsapPhoto(item,selected);
 });
 $('asapBody').addEventListener('change',async event=>{

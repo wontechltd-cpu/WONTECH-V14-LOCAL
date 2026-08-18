@@ -448,6 +448,27 @@ $('#changeLogo').onclick=async()=>{
     showNote('마크를 교체했습니다. 견적·발주·재고·ASAP 창에도 적용됩니다.');
   }
 };
+$('#backupData').onclick=()=>$('#backupDialog').showModal();
+$('#closeBackup').onclick=()=>$('#backupDialog').close();
+$('#exportFullBackup').onclick=async()=>{
+  try{
+    showNote('전체 데이터와 첨부파일을 백업하고 있습니다.');const result=await wontech.exportFullBackup();if(!result?.success)return;
+    alert(`전체 백업을 완료했습니다.\n\n저장 위치: ${result.path}\n포함된 사진·첨부파일: ${result.fileCount}개`);
+  }catch(error){console.error(error);alert(`전체 백업 중 문제가 발생했습니다.\n${error.message}`);}
+};
+$('#exportExcelBackup').onclick=async()=>{
+  try{
+    showNote('전체 데이터를 Excel 시트로 정리하고 있습니다.');const result=await wontech.exportExcelBackup();if(!result?.success)return;
+    alert(`전체 Excel 백업을 완료했습니다.\n\n저장 위치: ${result.path}\n\n사진과 첨부파일 복원용으로는 전체 백업파일도 함께 보관하세요.`);
+  }catch(error){console.error(error);alert(`Excel 백업 중 문제가 발생했습니다.\n${error.message}`);}
+};
+$('#importFullBackup').onclick=async()=>{
+  if(!confirm('전체 백업을 복원하면 현재 프로그램 데이터가 백업파일의 내용으로 바뀝니다.\n복원 전에 현재 자료도 별도로 백업해 두는 것을 권장합니다.\n\n계속할까요?'))return;
+  try{
+    const result=await wontech.importFullBackup();if(!result?.success)return;
+    alert(`전체 데이터 복원을 완료했습니다.\n사진·첨부파일 ${result.restoredFiles}개를 복구했습니다.\n프로그램을 다시 시작합니다.`);await wontech.restartApp();
+  }catch(error){console.error(error);alert(`전체 백업 복원 중 문제가 발생했습니다.\n${error.message}`);}
+};
 $('#top').onchange=event=>wontech.top(event.target.checked);
 $('#print').onclick=()=>withOutput(async()=>{
   const result=await wontech.print();
