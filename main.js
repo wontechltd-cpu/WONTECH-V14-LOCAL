@@ -11,7 +11,7 @@ let storePath;
 // V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
 app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],folderShortcuts:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},outputDirectory:'',logoData:null};}
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],folderShortcuts:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},inventoryData:{items:[],issues:[]},asapData:{items:[]},outputDirectory:'',logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -19,7 +19,7 @@ function readStore(){
 function writeStore(data){fs.mkdirSync(path.dirname(storePath),{recursive:true});fs.writeFileSync(storePath,JSON.stringify(data,null,2),'utf8');}
 function getStore(key){return readStore()[key];}
 function setStore(key,value){const d=readStore();d[key]=value;writeStore(d);return value;}
-function dataUrlFromFile(file){const ext=path.extname(file).toLowerCase();const mime=ext==='.png'?'image/png':ext==='.webp'?'image/webp':'image/jpeg';return `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;}
+function dataUrlFromFile(file){const ext=path.extname(file).toLowerCase();const mime=ext==='.png'?'image/png':ext==='.webp'?'image/webp':ext==='.bmp'?'image/bmp':'image/jpeg';return `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;}
 function getLogo(){return getStore('logoData')||dataUrlFromFile(path.join(__dirname,'assets','wontech-logo.jpg'));}
 
 function windowOpts(extra={}){return {width:900,height:820,minWidth:520,minHeight:500,backgroundColor:'#eef2f6',autoHideMenuBar:true,icon:iconPath,show:true,webPreferences:{preload:path.join(__dirname,'preload.js'),contextIsolation:true,nodeIntegration:false},...extra};}
@@ -182,6 +182,8 @@ ipcMain.handle('window:open',(_,kind,arg)=>{
   else if(kind==='quote-manager')openManager('quote');
   else if(kind==='order-manager')openManager('order');
   else if(kind==='quote-tracking'){const win=createNamed('quote-tracking','quote-tracking.html',{width:1500,height:850,minWidth:540,minHeight:480});win.maximize();}
+  else if(kind==='inventory-manager'){const win=createNamed('inventory-manager','inventory.html',{width:1550,height:880,minWidth:720,minHeight:560});win.maximize();}
+  else if(kind==='asap-manager'){const win=createNamed('asap-manager','asap.html',{width:1550,height:880,minWidth:720,minHeight:560});win.maximize();}
   else if(kind==='editor')openEditor(arg?.type||'quote',arg?.docId||'',arg?.language||'ko');
   return true;
 });
@@ -293,6 +295,42 @@ function archiveAttachments(recordId,sourcePaths=[]){
   });
   return saved;
 }
+
+function managedImageBase(){return path.join(app.getPath('userData'),'wontech-v14-images');}
+function managedImagePath(scope,recordId){
+  const safeScope=['inventory','asap'].includes(scope)?scope:'shared';
+  const safeId=String(recordId||'unassigned').replace(/[^a-zA-Z0-9_-]/g,'_');
+  return path.join(managedImageBase(),safeScope,safeId);
+}
+function isManagedImage(filePath){
+  if(!filePath)return false;
+  const base=path.resolve(managedImageBase())+path.sep;
+  const target=path.resolve(String(filePath));
+  return target.startsWith(base);
+}
+function archiveManagedImage(scope,recordId,source){
+  if(!source||!fs.existsSync(source)||!fs.statSync(source).isFile())return null;
+  const targetDir=managedImagePath(scope,recordId);
+  fs.mkdirSync(targetDir,{recursive:true});
+  const original=path.basename(source);
+  const extension=path.extname(original).toLowerCase()||'.jpg';
+  const target=path.join(targetDir,`${Date.now()}-${crypto.randomBytes(3).toString('hex')}${extension}`);
+  fs.copyFileSync(source,target);
+  return {id:crypto.randomUUID(),name:original,path:target,addedAt:new Date().toISOString()};
+}
+
+ipcMain.handle('managed-image:pick',async(event,value={})=>{
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const result=await dialog.showOpenDialog(owner,{title:'제품 사진 선택',properties:['openFile'],filters:[{name:'제품 사진',extensions:['jpg','jpeg','png','webp','bmp']}]});
+  if(result.canceled||!result.filePaths[0])return null;
+  const saved=archiveManagedImage(value.scope,value.recordId,result.filePaths[0]);
+  return saved?{...saved,dataUrl:dataUrlFromFile(saved.path)}:null;
+});
+ipcMain.handle('managed-image:read',(_,filePath)=>isManagedImage(filePath)&&fs.existsSync(filePath)?dataUrlFromFile(filePath):'');
+ipcMain.handle('managed-image:remove',(_,filePath)=>{
+  if(!isManagedImage(filePath)||!fs.existsSync(filePath))return false;
+  try{fs.unlinkSync(filePath);return true;}catch(error){console.error('managed image remove',error);return false;}
+});
 
 ipcMain.handle('attachment:pick',async(event,recordId)=>{
   const owner=BrowserWindow.fromWebContents(event.sender);

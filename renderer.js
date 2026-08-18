@@ -436,6 +436,8 @@ $('#checklist').onclick=()=>wontech.open('checklist');
 $('#quoteManager').onclick=()=>wontech.open('quote-manager');
 $('#orderManager').onclick=()=>wontech.open('order-manager');
 $('#attachments').onclick=()=>wontech.open('quote-tracking');
+$('#inventoryManager').onclick=()=>wontech.open('inventory-manager');
+$('#asapManager').onclick=()=>wontech.open('asap-manager');
 $('#googleTranslate').onclick=()=>openExternal('https://translate.google.com/?sl=en&tl=ko&op=translate','Google번역');
 $('#gptTranslate').onclick=()=>openExternal('https://chatgpt.com/','GPT번역');
 $('#changeLogo').onclick=async()=>{
@@ -443,7 +445,7 @@ $('#changeLogo').onclick=async()=>{
   if(data){
     logoData=data;
     applyLogo();
-    showNote('마크를 교체했습니다. 견적/발주 창에도 적용됩니다.');
+    showNote('마크를 교체했습니다. 견적·발주·재고·ASAP 창에도 적용됩니다.');
   }
 };
 $('#top').onchange=event=>wontech.top(event.target.checked);

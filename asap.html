@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WONTECH ASAP관리</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="operations.css">
+</head>
+<body class="operations-app">
+  <header class="toolbar operations-header">
+    <img id="asapLogo" class="logo-top" alt="WONTECH">
+    <div class="operations-heading"><strong>ASAP관리</strong><span>긴급 요청의 제품 사진 · 요청회사 · 담당자 · 요청/확정금액 · 결재처리를 관리합니다.</span></div>
+    <div class="operations-header-actions">
+      <button id="addAsap" class="primary-action">＋ ASAP 추가</button>
+      <button id="asapExcel" class="output-action">엑셀 저장</button>
+      <button id="asapJpg" class="output-action">JPG 저장</button>
+      <button id="asapPdf" class="output-action">PDF 저장</button>
+      <button id="closeAsap" class="close-window" title="창 닫기">×</button>
+    </div>
+  </header>
+  <nav class="operations-tabs" aria-label="ASAP 분류">
+    <button id="asapAllTab">전체 목록</button>
+    <button id="asapPendingTab" class="active">미처리 목록</button>
+    <button id="asapCompletedTab">완료 목록</button>
+    <div class="operations-summary"><span>전체 <b id="asapAllCount">0</b></span><span>미처리 <b id="asapPendingCount">0</b></span><span>완료 <b id="asapCompletedCount">0</b></span></div>
+  </nav>
+  <section class="operations-filters" aria-label="ASAP 필터">
+    <label>요청회사<select id="asapCompanyFilter"><option value="">전체 회사</option></select></label>
+    <label>담당자<select id="asapManagerFilter"><option value="">전체 담당자</option></select></label>
+    <label>처리상태<select id="asapStatusFilter"><option value="all">전체</option><option value="pending" selected>미처리</option><option value="completed">완료</option></select></label>
+    <button id="resetAsapFilters" type="button">필터 초기화</button>
+    <span id="asapFilteredCount" class="filter-result">검색결과 0건</span>
+  </section>
+  <main class="operations-main">
+    <section class="operations-table-wrap">
+      <table class="operations-table" aria-label="ASAP 관리 목록">
+        <colgroup><col style="width:105px"><col style="width:280px"><col style="width:145px"><col style="width:125px"><col style="width:125px"><col style="width:125px"><col style="width:120px"><col style="width:120px"><col style="width:92px"><col style="width:190px"><col style="width:190px"><col style="width:70px"></colgroup>
+        <thead><tr><th>제품사진</th><th>ASAP내용</th><th>요청회사</th><th>담당자</th><th>요청일</th><th>처리일</th><th>요청금액</th><th>확정금액</th><th>결재처리</th><th>처리방법</th><th>비고</th><th>관리</th></tr></thead>
+        <tbody id="asapBody"></tbody>
+      </table>
+    </section>
+  </main>
+  <div class="operations-help">결재처리를 <b>완료</b>로 선택하면 처리일이 비어 있을 경우 오늘 날짜가 자동 입력되고, 해당 항목은 <b>완료 목록</b>으로 이동합니다. 완료 목록에서 다시 미처리로 변경하면 미처리 목록으로 복귀합니다.</div>
+  <div id="asapNote" class="output-note" role="status"></div>
+  <script src="html2canvas.min.js"></script>
+  <script src="jspdf.umd.min.js"></script>
+  <script src="operations-output.js"></script>
+  <script src="asap.js"></script>
+</body>
+</html>
