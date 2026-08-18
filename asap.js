@@ -14,7 +14,7 @@ function normalizeItem(item){return{...blankItem(),...item,id:item.id||uid(),pho
 function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>wontech.set('asapData',asap),180);}
 async function saveNow(){clearTimeout(saveTimer);await wontech.set('asapData',asap);}
 function showNote(message){const note=$('asapNote');note.textContent=message;note.classList.add('show');clearTimeout(showNote.timer);showNote.timer=setTimeout(()=>note.classList.remove('show'),2200);}
-function photoCell(item){return `<div class="product-photo-cell"><div class="product-photo-preview" data-photo-id="${esc(item.id)}">${item.photo?'사진 불러오는 중':'사진 없음'}</div><div class="product-photo-actions"><button type="button" data-action="pick-photo">첨부</button><button type="button" class="remove-photo" data-action="remove-photo" ${item.photo?'':'disabled'}>삭제</button></div></div>`;}
+function photoCell(item){return `<div class="product-photo-cell"><div class="product-photo-preview" data-photo-id="${esc(item.id)}" title="사진 파일을 이곳으로 끌어놓을 수 있습니다">${item.photo?'사진 불러오는 중':'사진 끌어놓기'}</div><div class="product-photo-actions"><button type="button" data-action="pick-photo">첨부</button><button type="button" class="remove-photo" data-action="remove-photo" ${item.photo?'':'disabled'}>삭제</button></div></div>`;}
 function rowHtml(item){
   return `<tr data-id="${esc(item.id)}" class="${item.status==='완료'?'asap-completed':''}"><td>${photoCell(item)}</td><td><textarea data-field="content" placeholder="ASAP 내용">${esc(item.content)}</textarea></td><td><input data-field="company" value="${esc(item.company)}" placeholder="요청회사"></td><td><input data-field="manager" value="${esc(item.manager)}" placeholder="담당자"></td><td><input type="date" data-field="requestDate" value="${esc(item.requestDate)}"></td><td><input type="date" data-field="processDate" value="${esc(item.processDate)}"></td><td><input class="money-input" data-field="requestAmount" value="${money(item.requestAmount)}" inputmode="numeric"></td><td><input class="money-input" data-field="confirmedAmount" value="${money(item.confirmedAmount)}" inputmode="numeric"></td><td><select class="${item.status==='완료'?'status-complete':'status-pending'}" data-field="status"><option value="미처리" ${item.status==='미처리'?'selected':''}>미처리</option><option value="완료" ${item.status==='완료'?'selected':''}>완료</option></select></td><td><textarea data-field="method" placeholder="처리방법">${esc(item.method)}</textarea></td><td><textarea data-field="note" placeholder="비고">${esc(item.note)}</textarea></td><td><div class="row-actions"><button type="button" class="delete-row" data-action="delete">삭제</button></div></td></tr>`;
 }
@@ -22,7 +22,7 @@ async function hydratePhotos(){
   await Promise.all(asap.items.map(async item=>{
     if(!item.photo?.path)return;const box=document.querySelector(`[data-photo-id="${CSS.escape(item.id)}"]`);if(!box)return;
     const data=await wontech.readManagedImage(item.photo.path);if(!box.isConnected)return;
-    if(data){const image=document.createElement('img');image.alt='ASAP 제품 사진';image.src=data;box.replaceChildren(image)}else box.textContent='사진 없음';
+    if(data){const image=document.createElement('img');image.alt='ASAP 제품 사진';image.src=data;box.replaceChildren(image)}else box.textContent='사진 끌어놓기';
   }));
 }
 function visibleItems(){
@@ -77,6 +77,17 @@ async function exportAsap(format){
     if(saved!==false)showNote(`${format.toUpperCase()} 파일을 저장했습니다.`);
   }catch(error){console.error(error);alert(`${format.toUpperCase()} 저장 중 문제가 발생했습니다.\n${error.message}`);}
 }
+async function printAsap(){
+  const output=window.WontechOperationsOutput;if(!output?.print){alert('프린트 기능을 불러오지 못했습니다.');return;}
+  try{
+    showNote('A4 가로 인쇄 문서를 준비하고 있습니다.');await saveNow();const config=await asapReportConfig(true),result=await output.print(config);
+    if(result&&!result.success&&result.reason)alert(`프린트 오류: ${result.reason}`);else showNote('프린트 창을 열었습니다.');
+  }catch(error){console.error(error);alert(`프린트 중 문제가 발생했습니다.\n${error.message}`);}
+}
+async function applyAsapPhoto(item,selected){
+  if(!selected)return false;if(item.photo?.path)await wontech.removeManagedImage(item.photo.path);
+  const{dataUrl,...photo}=selected;item.photo=photo;await saveNow();render();showNote('제품 사진을 첨부했습니다.');return true;
+}
 function findItem(target){const row=target.closest('tr[data-id]');return row?asap.items.find(item=>item.id===row.dataset.id):null;}
 $('asapBody').addEventListener('input',event=>{
   const field=event.target.dataset.field,item=findItem(event.target);if(!field||!item||field==='status')return;
@@ -87,6 +98,14 @@ $('asapBody').addEventListener('focusout',event=>{
   if(['company','manager'].includes(event.target.dataset.field))updateFilterOptions();
 });
 $('asapBody').addEventListener('focusin',event=>{if(event.target.classList.contains('money-input'))event.target.value=String(number(event.target.value)||'');});
+$('asapBody').addEventListener('dragover',event=>{const box=event.target.closest('.product-photo-preview');if(!box)return;event.preventDefault();event.dataTransfer.dropEffect='copy';box.classList.add('drag-over');});
+$('asapBody').addEventListener('dragleave',event=>{const box=event.target.closest('.product-photo-preview');if(box)box.classList.remove('drag-over');});
+$('asapBody').addEventListener('drop',async event=>{
+  const box=event.target.closest('.product-photo-preview');if(!box)return;event.preventDefault();box.classList.remove('drag-over');
+  const item=asap.items.find(entry=>entry.id===box.dataset.photoId),file=event.dataTransfer.files?.[0];if(!item||!file)return;
+  const filePath=wontech.pathForFile(file),selected=await wontech.archiveManagedImage('asap',item.id,filePath);
+  if(!selected){showNote('JPG, PNG, WEBP, BMP 사진 파일만 끌어놓을 수 있습니다.');return;}await applyAsapPhoto(item,selected);
+});
 $('asapBody').addEventListener('change',async event=>{
   const field=event.target.dataset.field,item=findItem(event.target);if(!field||!item)return;
   if(field==='status'){
@@ -98,8 +117,7 @@ $('asapBody').addEventListener('click',async event=>{
   const button=event.target.closest('button[data-action]');if(!button)return;const item=findItem(button);if(!item)return;
   if(button.dataset.action==='pick-photo'){
     const selected=await wontech.pickManagedImage('asap',item.id);if(!selected)return;
-    if(item.photo?.path)await wontech.removeManagedImage(item.photo.path);
-    const{dataUrl,...photo}=selected;item.photo=photo;await saveNow();render();showNote('제품 사진을 첨부했습니다.');
+    await applyAsapPhoto(item,selected);
   }else if(button.dataset.action==='remove-photo'){
     if(!item.photo||!confirm('이 제품 사진을 삭제할까요?'))return;
     await wontech.removeManagedImage(item.photo.path);item.photo=null;await saveNow();render();showNote('제품 사진을 삭제했습니다.');
@@ -120,6 +138,7 @@ $('resetAsapFilters').onclick=()=>{filters={company:'',manager:''};activeTab='al
 $('asapExcel').onclick=()=>exportAsap('excel');
 $('asapJpg').onclick=()=>exportAsap('jpg');
 $('asapPdf').onclick=()=>exportAsap('pdf');
+$('asapPrint').onclick=printAsap;
 $('closeAsap').onclick=()=>wontech.close();
 async function init(){
   $('asapLogo').src=await wontech.getLogo();const saved=await wontech.get('asapData');asap={items:Array.isArray(saved?.items)?saved.items.map(normalizeItem):[]};render();

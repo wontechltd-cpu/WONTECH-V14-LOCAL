@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('wontech',{
   archiveAttachments:(recordId,paths)=>ipcRenderer.invoke('attachment:archive',recordId,paths),
   openAttachment:filePath=>ipcRenderer.invoke('attachment:open',filePath),
   pickManagedImage:(scope,recordId)=>ipcRenderer.invoke('managed-image:pick',{scope,recordId}),
+  archiveManagedImage:(scope,recordId,filePath)=>ipcRenderer.invoke('managed-image:archive',{scope,recordId,filePath}),
   readManagedImage:filePath=>ipcRenderer.invoke('managed-image:read',filePath),
   removeManagedImage:filePath=>ipcRenderer.invoke('managed-image:remove',filePath),
   pathForFile:file=>webUtils.getPathForFile(file),

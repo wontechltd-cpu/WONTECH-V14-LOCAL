@@ -10,34 +10,48 @@
 <body class="operations-app">
   <header class="toolbar operations-header">
     <img id="inventoryLogo" class="logo-top" alt="WONTECH">
-    <div class="operations-heading"><strong>재고관리</strong><span>제품 사진 · 매입/판매단가 · 현재 재고 · 불출 사유와 이력을 한 화면에서 관리합니다.</span></div>
+    <div class="operations-heading"><strong>재고관리</strong><span>제품 사진 · 매입 등록 · 현재 재고 · 입출고 이력을 한 화면에서 관리합니다.</span></div>
     <div class="operations-header-actions">
       <button id="addInventory" class="primary-action">＋ 품목 추가</button>
       <button id="inventoryExcel" class="output-action">엑셀 저장</button>
       <button id="inventoryJpg" class="output-action">JPG 저장</button>
       <button id="inventoryPdf" class="output-action">PDF 저장</button>
+      <button id="inventoryPrint" class="output-action">프린트</button>
       <button id="closeInventory" class="close-window" title="창 닫기">×</button>
     </div>
   </header>
   <nav class="operations-tabs" aria-label="재고관리 화면">
     <button id="inventoryListTab" class="active">재고 목록</button>
-    <button id="inventoryHistoryTab">불출 이력</button>
-    <div class="operations-summary"><span>등록 <b id="inventoryItemCount">0</b>품목</span><span>총 재고 <b id="inventoryStockTotal">0</b></span><span>누적 불출 <b id="inventoryIssueTotal">0</b></span></div>
+    <button id="inventoryHistoryTab">입출고 이력</button>
+    <div class="operations-summary"><span>등록 <b id="inventoryItemCount">0</b>품목</span><span>총 재고 <b id="inventoryStockTotal">0</b></span><span>누적 매입 <b id="inventoryPurchaseTotal">0</b></span><span>누적 불출 <b id="inventoryIssueTotal">0</b></span></div>
   </nav>
   <main class="operations-main">
     <section id="inventoryListView" class="operations-table-wrap">
-      <table class="operations-table" aria-label="재고 목록">
+      <table class="operations-table inventory-table" aria-label="재고 목록">
         <colgroup><col style="width:110px"><col style="width:105px"><col style="width:225px"><col style="width:145px"><col style="width:115px"><col style="width:115px"><col style="width:88px"><col style="width:88px"><col style="width:105px"><col style="width:190px"><col style="width:80px"></colgroup>
         <thead><tr><th>고유번호</th><th>첨부사진</th><th>품명</th><th>규격</th><th>매입단가</th><th>판매단가</th><th>재고수량</th><th>매입수량</th><th>불출수량</th><th>비고</th><th>관리</th></tr></thead>
         <tbody id="inventoryBody"></tbody>
       </table>
     </section>
     <section id="inventoryHistoryView" class="history-view" hidden>
-      <div class="history-title"><strong id="inventoryHistoryTitle">전체 불출 이력</strong><span id="inventoryHistoryCount">0건</span></div>
-      <table class="history-table"><thead><tr><th>날짜</th><th>고유번호</th><th>품명</th><th>불출수량</th><th>사용처</th><th>불출 사유</th><th>처리 후 재고</th></tr></thead><tbody id="inventoryHistoryBody"></tbody></table>
+      <div class="history-title"><strong id="inventoryHistoryTitle">전체 입출고 이력</strong><span id="inventoryHistoryCount">0건</span></div>
+      <table class="history-table inventory-history-table"><thead><tr><th>구분</th><th>날짜</th><th>고유번호</th><th>품명</th><th>수량</th><th>매입처/사용처</th><th>메모/불출 사유</th><th>처리 후 재고</th></tr></thead><tbody id="inventoryHistoryBody"></tbody></table>
     </section>
   </main>
-  <div class="operations-help">제품 사진의 <b>첨부</b>로 사진을 등록하고 <b>삭제</b>로 제거할 수 있습니다. 불출 등록에서 날짜·수량·사용처·사유를 입력하면 재고수량이 자동 차감되고 불출 이력에 저장됩니다. 매입수량과 재고수량은 초기값이나 실사 결과에 맞게 직접 조정할 수 있습니다.</div>
+  <div class="operations-help">제품 사진은 <b>첨부</b> 버튼을 누르거나 사진 파일을 사진칸으로 끌어놓아 등록할 수 있습니다. 매입 등록 시 재고가 자동 증가하고, 불출 등록 시 자동 차감됩니다. 모든 내역은 <b>입출고 이력</b>에 보존됩니다.</div>
+  <dialog id="purchaseDialog" class="issue-dialog">
+    <div class="dialog-title" id="purchaseDialogTitle">재고 매입 등록</div>
+    <form id="purchaseForm">
+      <div class="dialog-body issue-form">
+        <label>매입 날짜<input id="purchaseDate" type="date" required></label>
+        <label>매입수량<input id="purchaseQuantity" type="number" min="1" step="1" required></label>
+        <label class="wide">매입처 (선택)<input id="purchaseSupplier" placeholder="예: 원테크 거래처"></label>
+        <label class="wide">매입 메모 (선택)<input id="purchaseNote" placeholder="예: 안전재고 보충"></label>
+        <div id="purchaseMessage" class="dialog-message wide"></div>
+      </div>
+      <div class="dialog-actions"><button id="cancelPurchase" type="button">취소</button><button type="submit" class="primary">매입 확정</button></div>
+    </form>
+  </dialog>
   <dialog id="issueDialog" class="issue-dialog">
     <div class="dialog-title" id="issueDialogTitle">재고 불출 등록</div>
     <form id="issueForm">
@@ -55,6 +69,7 @@
   <script src="html2canvas.min.js"></script>
   <script src="jspdf.umd.min.js"></script>
   <script src="operations-output.js"></script>
+  <script src="operations-photo-viewer.js"></script>
   <script src="inventory.js"></script>
 </body>
 </html>

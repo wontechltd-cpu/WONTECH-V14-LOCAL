@@ -75,5 +75,13 @@
     const bytes=Array.from(new Uint8Array(pdf.output('arraybuffer')));return wontech.saveBytes(bytes,`${config.fileName}.pdf`);
   }
 
-  window.WontechOperationsOutput={saveExcel,saveJpg,savePdf};
+  async function print(config){
+    let sheet;document.body.classList.add('operations-exporting','operations-report-printing');
+    try{
+      sheet=await buildReport(config);await new Promise(resolve=>setTimeout(resolve,120));
+      return await wontech.print({landscape:true});
+    }finally{sheet?.remove();document.body.classList.remove('operations-report-printing','operations-exporting');}
+  }
+
+  window.WontechOperationsOutput={saveExcel,saveJpg,savePdf,print};
 })();

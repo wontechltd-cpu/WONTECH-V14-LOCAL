@@ -11,7 +11,7 @@ let storePath;
 // V14.0.0과 동일한 데이터 폴더를 사용해 기존 업무메모·견적·발주 자료를 그대로 이어갑니다.
 app.setPath('userData',path.join(app.getPath('appData'),'wontech-v14-local'));
 
-function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],folderShortcuts:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},inventoryData:{items:[],issues:[]},asapData:{items:[]},outputDirectory:'',logoData:null};}
+function defaults(){return {memoData:{tasksByDate:{},rollLastDate:null},checklist:[],quickLinks:[],folderShortcuts:[],documents:[],quoteTracking:{items:[],contacts:[],output:{orientation:'landscape',density:'normal'},columnWidths:[]},inventoryData:{items:[],purchases:[],issues:[]},asapData:{items:[]},outputDirectory:'',logoData:null};}
 function readStore(){
   try{const raw=JSON.parse(fs.readFileSync(storePath,'utf8'));return {...defaults(),...raw};}
   catch{return defaults();}
@@ -310,6 +310,7 @@ function isManagedImage(filePath){
 }
 function archiveManagedImage(scope,recordId,source){
   if(!source||!fs.existsSync(source)||!fs.statSync(source).isFile())return null;
+  if(!['.jpg','.jpeg','.png','.webp','.bmp'].includes(path.extname(source).toLowerCase()))return null;
   const targetDir=managedImagePath(scope,recordId);
   fs.mkdirSync(targetDir,{recursive:true});
   const original=path.basename(source);
@@ -324,6 +325,10 @@ ipcMain.handle('managed-image:pick',async(event,value={})=>{
   const result=await dialog.showOpenDialog(owner,{title:'제품 사진 선택',properties:['openFile'],filters:[{name:'제품 사진',extensions:['jpg','jpeg','png','webp','bmp']}]});
   if(result.canceled||!result.filePaths[0])return null;
   const saved=archiveManagedImage(value.scope,value.recordId,result.filePaths[0]);
+  return saved?{...saved,dataUrl:dataUrlFromFile(saved.path)}:null;
+});
+ipcMain.handle('managed-image:archive',(_,value={})=>{
+  const saved=archiveManagedImage(value.scope,value.recordId,value.filePath);
   return saved?{...saved,dataUrl:dataUrlFromFile(saved.path)}:null;
 });
 ipcMain.handle('managed-image:read',(_,filePath)=>isManagedImage(filePath)&&fs.existsSync(filePath)?dataUrlFromFile(filePath):'');

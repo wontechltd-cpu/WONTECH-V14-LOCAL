@@ -15,8 +15,8 @@
 .operations-summary span{display:inline-flex;align-items:center;gap:4px}
 .operations-summary b{color:var(--navy);font-variant-numeric:tabular-nums}
 .operations-filters{display:flex;align-items:flex-end;gap:8px;min-height:58px;padding:8px 10px;border-bottom:1px solid var(--line);background:#edf3f7;flex:0 0 auto}
-.operations-filters label{display:grid;gap:4px;min-width:160px;color:#3f5566;font-size:10px;font-weight:800}
-.operations-filters select{height:34px;border:1px solid #b9c7d1;border-radius:5px;background:#fff;padding:4px 28px 4px 8px;color:#1e3444;font-weight:700}
+.operations-filters label{display:grid;gap:4px;min-width:160px;color:#3f5566;font-size:10px;font-weight:800;text-align:center}
+.operations-filters select{height:34px;border:1px solid #b9c7d1;border-radius:5px;background:#fff;padding:4px 28px 4px 8px;color:#1e3444;font-weight:700;text-align:center;text-align-last:center}
 .operations-filters button{height:34px;border:1px solid #9fb2c0;border-radius:5px;background:#fff;padding:0 12px;color:#304b5e;font-weight:800}
 .filter-result{margin-left:auto;padding:8px 4px;color:#244b65;font-weight:900;white-space:nowrap}
 .operations-main{position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:#fff}
@@ -33,14 +33,19 @@
 .operations-table input[type=date]{font-weight:700}
 .operations-table .money-input{text-align:right;font-variant-numeric:tabular-nums}
 .operations-table .stock-input{font-weight:900;color:#1f5f83}
+.inventory-table input:not(.money-input),.inventory-table select{text-align:center}
+.inventory-table textarea[data-field=note]{text-align:left}
+.asap-table input[data-field=company],.asap-table input[data-field=manager],.asap-table input[data-field=requestDate],.asap-table input[data-field=processDate],.asap-table select[data-field=status]{text-align:center;text-align-last:center}
 .operations-table .record-number{font-weight:800;color:#38546a;white-space:nowrap}
 .operations-table .cumulative{display:block;margin-bottom:5px;font-weight:800;font-variant-numeric:tabular-nums}
 .product-photo-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
 .product-photo-preview{width:84px;height:58px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #cad4dc;border-radius:6px;background:#f3f6f8;color:#8795a0;font-size:10px}
-.product-photo-preview img{display:block;width:100%;height:100%;object-fit:cover}
+.product-photo-preview img{display:block;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.product-photo-preview.drag-over{border:2px dashed #2380b8;background:#dff2fd;color:#165d87;box-shadow:0 0 0 3px rgba(35,128,184,.15)}
 .product-photo-actions,.row-actions{display:flex;justify-content:center;gap:3px;flex-wrap:wrap}
-.product-photo-actions button,.row-actions button,.issue-open-button{border:0;border-radius:4px;padding:4px 6px;font-size:10px;font-weight:700}
+.product-photo-actions button,.row-actions button,.issue-open-button,.purchase-open-button{border:0;border-radius:4px;padding:4px 6px;font-size:10px;font-weight:700}
 .product-photo-actions button,.row-actions .history-button,.issue-open-button{background:#e7f3f9;color:#235b7b}
+.purchase-open-button{background:#e8f5eb;color:#27704d}
 .product-photo-actions .remove-photo,.row-actions .delete-row{background:#eceff1;color:#9a3c3c}
 .row-actions{flex-direction:column}
 .operations-empty{padding:52px 20px!important;text-align:center!important;color:#7b8994;background:#fff!important}
@@ -58,9 +63,20 @@
 .history-table th{text-align:center}
 .history-table td{text-align:center}
 .history-table td:nth-child(5),.history-table td:nth-child(6){text-align:left}
+.inventory-history-table td{text-align:center!important}
+.inventory-history-table td:nth-child(4),.inventory-history-table td:nth-child(6),.inventory-history-table td:nth-child(7){text-align:left!important}
+.transaction-badge{display:inline-block;min-width:42px;padding:4px 7px;border-radius:12px;font-size:10px;font-weight:900}
+.transaction-purchase{background:#e4f4e8;color:#267048}
+.transaction-issue{background:#fbe9e7;color:#a04439}
 .asap-completed td{background:#eef7f0}
 .status-complete{color:#26714d;font-weight:900}
 .status-pending{color:#9a6500;font-weight:900}
+.operations-photo-viewer{width:auto;max-width:calc(100vw - 30px);padding:0;overflow:visible;background:transparent;box-shadow:none}
+.operations-photo-viewer::backdrop{background:rgba(10,24,35,.72)}
+.photo-viewer-panel{position:relative;padding:12px 12px 9px;border-radius:10px;background:#fff;box-shadow:0 20px 70px rgba(0,0,0,.45)}
+.photo-viewer-image{display:block;width:252px;height:174px;max-width:calc(100vw - 54px);object-fit:contain;border-radius:6px;background:#edf2f5}
+.photo-viewer-close{position:absolute;right:-11px;top:-11px;width:31px;height:31px;border:2px solid #fff;border-radius:50%;background:#203b50;color:#fff;font-size:23px;font-weight:500;line-height:25px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.photo-viewer-caption{padding-top:7px;text-align:center;color:#506574;font-size:10px;font-weight:800}
 .operations-export-sheet{position:absolute;left:0;top:0;z-index:10000;width:1500px;min-height:100vh;padding:28px;background:#fff;color:#172631;font-family:Arial,'Malgun Gothic',sans-serif;pointer-events:none}
 .operations-app.operations-exporting{overflow:visible!important}
 .operations-export-head{display:flex;align-items:center;gap:22px;padding-bottom:15px;border-bottom:5px solid #1f4b73}
@@ -93,10 +109,13 @@
 }
 @media print{
   @page{size:A4 landscape;margin:6mm}
-  .operations-header,.operations-tabs,.operations-filters,.operations-help,.product-photo-actions,.row-actions,.issue-open-button{display:none!important}
+  .operations-header,.operations-tabs,.operations-filters,.operations-help,.product-photo-actions,.row-actions,.issue-open-button,.purchase-open-button{display:none!important}
   .operations-app{height:auto;overflow:visible;background:#fff}
   .operations-main,.operations-table-wrap,.history-view{display:block;overflow:visible}
   .operations-table{width:100%;font-size:7pt}
   .operations-table th{position:static}
   .operations-table input,.operations-table select,.operations-table textarea{border:0;appearance:none;font-size:7pt;padding:1px}
+  .operations-report-printing{display:block!important;height:auto!important;overflow:visible!important;background:#fff!important}
+  .operations-report-printing>*:not(.operations-export-sheet){display:none!important}
+  .operations-report-printing>.operations-export-sheet{display:block!important;position:static!important;width:100%!important;min-height:0!important;padding:0!important;box-shadow:none!important}
 }
